@@ -43,6 +43,16 @@
 			</exclusions>
 		</dependency>
 		<dependency>
+			<groupId>nl.topicus</groupId>
+			<artifactId>spanner-jdbc</artifactId>
+			<version>0.20</version>
+		</dependency>
+		<dependency>
+			<groupId>nl.topicus</groupId>
+			<artifactId>spanner-hibernate</artifactId>
+			<version>0.3</version>
+		</dependency>
+		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
 		</dependency>

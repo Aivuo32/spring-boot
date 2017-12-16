@@ -17,26 +17,29 @@
 package sample.atomikos;
 
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 
 @Entity
-public class Account {
+public class Account
+{
 
 	@Id
-	@GeneratedValue
 	private Long id;
 
 	private String username;
 
-	Account() {
+	Account()
+	{
 	}
 
-	public Account(String username) {
+	public Account(Long id, String username)
+	{
+		this.id = id;
 		this.username = username;
 	}
 
-	public String getUsername() {
+	public String getUsername()
+	{
 		return this.username;
 	}
 
