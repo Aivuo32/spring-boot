@@ -16,31 +16,22 @@
 
 package sample.data.jpa.domain;
 
-import java.io.Serializable;
 import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
 import javax.persistence.ManyToOne;
-import javax.persistence.SequenceGenerator;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
 import org.springframework.util.Assert;
 
 @Entity
-public class Review implements Serializable {
-
+public class Review extends BaseEntity
+{
 	private static final long serialVersionUID = 1L;
-
-	@Id
-	@SequenceGenerator(name = "review_generator", sequenceName = "review_sequence", initialValue = 64)
-	@GeneratedValue(generator = "review_generator")
-	private Long id;
 
 	@ManyToOne(optional = false)
 	private Hotel hotel;
@@ -66,10 +57,12 @@ public class Review implements Serializable {
 	@Column(nullable = false, length = 5000)
 	private String details;
 
-	protected Review() {
+	protected Review()
+	{
 	}
 
-	public Review(Hotel hotel, int index, ReviewDetails details) {
+	public Review(Hotel hotel, int index, ReviewDetails details)
+	{
 		Assert.notNull(hotel, "Hotel must not be null");
 		Assert.notNull(details, "Details must not be null");
 		this.hotel = hotel;
@@ -81,51 +74,63 @@ public class Review implements Serializable {
 		this.details = details.getDetails();
 	}
 
-	public Hotel getHotel() {
+	public Hotel getHotel()
+	{
 		return this.hotel;
 	}
 
-	public int getIndex() {
+	public int getIndex()
+	{
 		return this.index;
 	}
 
-	public Rating getRating() {
+	public Rating getRating()
+	{
 		return this.rating;
 	}
 
-	public void setRating(Rating rating) {
+	public void setRating(Rating rating)
+	{
 		this.rating = rating;
 	}
 
-	public Date getCheckInDate() {
+	public Date getCheckInDate()
+	{
 		return this.checkInDate;
 	}
 
-	public void setCheckInDate(Date checkInDate) {
+	public void setCheckInDate(Date checkInDate)
+	{
 		this.checkInDate = checkInDate;
 	}
 
-	public TripType getTripType() {
+	public TripType getTripType()
+	{
 		return this.tripType;
 	}
 
-	public void setTripType(TripType tripType) {
+	public void setTripType(TripType tripType)
+	{
 		this.tripType = tripType;
 	}
 
-	public String getTitle() {
+	public String getTitle()
+	{
 		return this.title;
 	}
 
-	public void setTitle(String title) {
+	public void setTitle(String title)
+	{
 		this.title = title;
 	}
 
-	public String getDetails() {
+	public String getDetails()
+	{
 		return this.details;
 	}
 
-	public void setDetails(String details) {
+	public void setDetails(String details)
+	{
 		this.details = details;
 	}
 }

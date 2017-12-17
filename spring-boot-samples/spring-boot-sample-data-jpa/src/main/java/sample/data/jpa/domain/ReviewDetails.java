@@ -16,11 +16,10 @@
 
 package sample.data.jpa.domain;
 
-import java.io.Serializable;
 import java.util.Date;
 
-public class ReviewDetails implements Serializable {
-
+public class ReviewDetails extends BaseEntity
+{
 	private static final long serialVersionUID = 1L;
 
 	private Rating rating;
@@ -33,46 +32,57 @@ public class ReviewDetails implements Serializable {
 
 	private String details;
 
-	public ReviewDetails() {
+	public ReviewDetails()
+	{
 	}
 
-	public Rating getRating() {
+	public Rating getRating()
+	{
 		return this.rating;
 	}
 
-	public void setRating(Rating rating) {
+	public void setRating(Rating rating)
+	{
 		this.rating = rating;
 	}
 
-	public Date getCheckInDate() {
+	public Date getCheckInDate()
+	{
 		return this.checkInDate;
 	}
 
-	public void setCheckInDate(Date checkInDate) {
+	public void setCheckInDate(Date checkInDate)
+	{
 		this.checkInDate = checkInDate;
 	}
 
-	public TripType getTripType() {
+	public TripType getTripType()
+	{
 		return this.tripType;
 	}
 
-	public void setTripType(TripType tripType) {
+	public void setTripType(TripType tripType)
+	{
 		this.tripType = tripType;
 	}
 
-	public String getTitle() {
+	public String getTitle()
+	{
 		return this.title;
 	}
 
-	public void setTitle(String title) {
+	public void setTitle(String title)
+	{
 		this.title = title;
 	}
 
-	public String getDetails() {
+	public String getDetails()
+	{
 		return this.details;
 	}
 
-	public void setDetails(String details) {
+	public void setDetails(String details)
+	{
 		this.details = details;
 	}
 }
