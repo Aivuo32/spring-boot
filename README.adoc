@@ -4,7 +4,7 @@
 == Goal
 This fork of Spring Boot contains a number of sample applications that have been modified to work with Google Cloud Spanner instead of the standard in-memory test databases (H2), to show how Cloud Spanner could easily and with little modifications could be (retro-)fitted under Spring Boot applications.
 
-
+== Spring Boot
 Spring Boot makes it easy to create Spring-powered, production-grade applications and
 services with absolute minimum fuss. It takes an opinionated view of the Spring platform
 so that new and existing users can quickly get to the bits they need.
