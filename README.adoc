@@ -1,7 +1,6 @@
-= Spring Boot image:https://ci.spring.io/api/v1/teams/spring-boot/pipelines/spring-boot/jobs/build/badge["Build Status", link="https://ci.spring.io/teams/spring-boot/pipelines/spring-boot?groups=Build"] image:https://badges.gitter.im/Join Chat.svg["Chat",link="https://gitter.im/spring-projects/spring-boot?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"]
-:docs: http://docs.spring.io/spring-boot/docs/current-SNAPSHOT/reference
+= Spring Boot - Sample Applications with Google Cloud Spanner
 
-== Goal
+== Description
 This fork of Spring Boot contains a number of sample applications that have been modified to work with Google Cloud Spanner instead of the standard in-memory test databases (H2), to show how Cloud Spanner could easily and with little modifications could be (retro-)fitted under Spring Boot applications.
 
 == Spring Boot
