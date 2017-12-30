@@ -16,24 +16,48 @@
 
 package sample.flyway;
 
+import org.flywaydb.core.Flyway;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.flyway.FlywayMigrationStrategy;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
 
 @SpringBootApplication
-public class SampleFlywayApplication {
+public class SampleFlywayApplication
+{
 
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) throws Exception
+	{
 		SpringApplication.run(SampleFlywayApplication.class, args);
 	}
 
 	@Bean
-	public CommandLineRunner runner(PersonRepository repository) {
-		return new CommandLineRunner() {
+	@Profile("dev")
+	public FlywayMigrationStrategy cleanMigrateStrategy()
+	{
+		FlywayMigrationStrategy strategy = new FlywayMigrationStrategy()
+		{
+			@Override
+			public void migrate(Flyway flyway)
+			{
+				flyway.clean();
+				flyway.migrate();
+			}
+		};
+		return strategy;
+	}
+
+	@Bean
+	public CommandLineRunner runner(PersonRepository repository)
+	{
+		return new CommandLineRunner()
+		{
 
 			@Override
-			public void run(String... args) throws Exception {
+			public void run(String... args) throws Exception
+			{
 				System.err.println(repository.findAll());
 			}
 
