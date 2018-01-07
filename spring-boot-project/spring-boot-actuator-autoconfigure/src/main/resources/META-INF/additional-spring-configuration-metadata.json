@@ -104,7 +104,7 @@
       "defaultValue": true
     },
     {
-      "name": "management.influxdb.jms.enabled",
+      "name": "management.health.influxdb.enabled",
       "type": "java.lang.Boolean",
       "description": "Whether to enable InfluxDB health check.",
       "defaultValue": true
@@ -192,9 +192,9 @@
       "defaultValue": true
     },
     {
-      "name": "management.metrics.binders.jvmmemory.enabled",
+      "name": "management.metrics.binders.jvm.enabled",
       "type": "java.lang.Boolean",
-      "description": "Whether to enable JVM memory metrics.",
+      "description": "Whether to enable JVM metrics.",
       "defaultValue": true
     },
     {
@@ -213,6 +213,18 @@
       "name": "management.metrics.binders.uptime.enabled",
       "type": "java.lang.Boolean",
       "description": "Whether to enable uptime metrics.",
+      "defaultValue": true
+    },
+    {
+      "name": "management.metrics.cache.instrument-cache",
+      "type": "java.lang.Boolean",
+      "description": "Instrument all available caches.",
+      "defaultValue": true
+    },
+    {
+      "name": "management.metrics.export.jmx.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether exporting of metrics to JMX is enabled.",
       "defaultValue": true
     },
     {
@@ -1112,7 +1124,7 @@
       "description": "Management endpoint context-path.",
       "defaultValue": "",
       "deprecation": {
-        "replacement": "management.server.context-path",
+        "replacement": "management.server.servlet.context-path",
         "level": "error"
       }
     },

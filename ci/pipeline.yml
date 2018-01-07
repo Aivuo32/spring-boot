@@ -85,6 +85,7 @@ jobs:
     trigger: true
   - do:
     - task: build-project
+      privileged: true
       timeout: 1h30m
       image: spring-boot-ci-image
       file: git-repo/ci/tasks/build-project.yml
@@ -137,7 +138,7 @@ jobs:
     - task: build-project
       timeout: 1h30m
       image: spring-boot-ci-image
-      file: git-repo/ci/tasks/build-project.yml
+      file: git-repo/ci/tasks/build-pr-project.yml
     - aggregate:
       - task: build-samples
         timeout: 1h30m
@@ -170,6 +171,7 @@ jobs:
     trigger: true
   - do:
     - task: build-project
+      privileged: true
       timeout: 1h30m
       image: spring-boot-jdk9-ci-image
       file: git-repo/ci/tasks/build-project.yml

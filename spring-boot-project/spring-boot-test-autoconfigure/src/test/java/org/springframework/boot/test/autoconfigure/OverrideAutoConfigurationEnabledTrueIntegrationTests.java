@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,13 +39,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 @OverrideAutoConfiguration(enabled = true)
 @BootstrapWith(SpringBootTestContextBootstrapper.class)
 @ImportAutoConfiguration(ExampleTestConfig.class)
-public class OverrideAutoConfigurationEnabledTrueIntegrationTest {
+public class OverrideAutoConfigurationEnabledTrueIntegrationTests {
 
 	@Autowired
 	private ApplicationContext context;
 
 	@Test
-	public void autoConfiguredContext() throws Exception {
+	public void autoConfiguredContext() {
 		ApplicationContext context = this.context;
 		assertThat(context.getBean(ExampleSpringBootApplication.class)).isNotNull();
 		assertThat(context.getBean(ConfigurationPropertiesBindingPostProcessor.class))

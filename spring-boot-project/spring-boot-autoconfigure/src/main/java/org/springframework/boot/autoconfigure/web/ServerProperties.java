@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -224,7 +224,7 @@ public class ServerProperties {
 	/**
 	 * Servlet properties.
 	 */
-	public class Servlet {
+	public static class Servlet {
 
 		/**
 		 * Servlet context init parameters.
@@ -303,8 +303,9 @@ public class ServerProperties {
 
 		public String getServletPrefix() {
 			String result = this.path;
-			if (result.contains("*")) {
-				result = result.substring(0, result.indexOf("*"));
+			int index = result.indexOf("*");
+			if (index != -1) {
+				result = result.substring(0, index);
 			}
 			if (result.endsWith("/")) {
 				result = result.substring(0, result.length() - 1);

@@ -17,6 +17,7 @@
 package org.springframework.boot.autoconfigure.security.reactive;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -33,7 +34,6 @@ import org.springframework.security.core.userdetails.MapReactiveUserDetailsServi
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 /**
@@ -51,6 +51,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)
 class ReactiveAuthenticationManagerConfiguration {
 
+	private static final String NOOP_PASSWORD_PREFIX = "{noop}";
+
+	private static final Pattern PASSWORD_ALGORITHM_PATTERN = Pattern
+			.compile("^\\{.+}.*$");
+
 	private static final Log logger = LogFactory
 			.getLog(ReactiveAuthenticationManagerConfiguration.class);
 
@@ -59,22 +64,28 @@ class ReactiveAuthenticationManagerConfiguration {
 			SecurityProperties properties,
 			ObjectProvider<PasswordEncoder> passwordEncoder) {
 		SecurityProperties.User user = properties.getUser();
+		UserDetails userDetails = getUserDetails(user,
+				getOrDeducePassword(user, passwordEncoder.getIfAvailable()));
+		return new MapReactiveUserDetailsService(userDetails);
+	}
+
+	private UserDetails getUserDetails(SecurityProperties.User user, String password) {
+		List<String> roles = user.getRoles();
+		return User.withUsername(user.getName()).password(password)
+				.roles(roles.toArray(new String[roles.size()])).build();
+	}
+
+	private String getOrDeducePassword(SecurityProperties.User user,
+			PasswordEncoder encoder) {
+		String password = user.getPassword();
 		if (user.isPasswordGenerated()) {
 			logger.info(String.format("%n%nUsing default security password: %s%n",
 					user.getPassword()));
 		}
-		UserDetails userDetails = getUserDetails(user, passwordEncoder);
-		return new MapReactiveUserDetailsService(userDetails);
-	}
-
-	private UserDetails getUserDetails(SecurityProperties.User user,
-			ObjectProvider<PasswordEncoder> passwordEncoder) {
-		String encodedPassword = passwordEncoder
-				.getIfAvailable(PasswordEncoderFactories::createDelegatingPasswordEncoder)
-				.encode(user.getPassword());
-		List<String> roles = user.getRoles();
-		return User.withUsername(user.getName()).password(encodedPassword)
-				.roles(roles.toArray(new String[roles.size()])).build();
+		if (encoder != null || PASSWORD_ALGORITHM_PATTERN.matcher(password).matches()) {
+			return password;
+		}
+		return NOOP_PASSWORD_PREFIX + password;
 	}
 
 }
