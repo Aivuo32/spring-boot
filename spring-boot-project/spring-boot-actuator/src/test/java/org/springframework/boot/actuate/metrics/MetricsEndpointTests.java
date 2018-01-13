@@ -93,11 +93,9 @@ public class MetricsEndpointTests {
 		this.registry.counter("cache", "host", "1", "region", "east", "result", "miss");
 		MetricsEndpoint.MetricResponse response = this.endpoint.metric("cache",
 				Collections.singletonList("host:1"));
-		assertThat(response.getAvailableTags()
-				.stream()
-				.filter(t -> t.getTag().equals("region"))
-				.flatMap(t -> t.getValues().stream()))
-				.containsExactly("east");
+		assertThat(response.getAvailableTags().stream()
+				.filter((t) -> t.getTag().equals("region"))
+				.flatMap((t) -> t.getValues().stream())).containsExactly("east");
 	}
 
 	@Test
@@ -134,12 +132,12 @@ public class MetricsEndpointTests {
 	private Optional<Double> getCount(MetricsEndpoint.MetricResponse response) {
 		return response.getMeasurements().stream()
 				.filter((ms) -> ms.getStatistic().equals(Statistic.Count)).findAny()
-				.map(MetricsEndpoint.MetricResponse.Sample::getValue);
+				.map(MetricsEndpoint.Sample::getValue);
 	}
 
 	private Stream<String> availableTagKeys(MetricsEndpoint.MetricResponse response) {
 		return response.getAvailableTags().stream()
-				.map(MetricsEndpoint.MetricResponse.AvailableTag::getTag);
+				.map(MetricsEndpoint.AvailableTag::getTag);
 	}
 
 }

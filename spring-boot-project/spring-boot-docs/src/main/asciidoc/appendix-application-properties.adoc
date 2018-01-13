@@ -47,7 +47,6 @@ content into your application. Rather, pick only the properties that you need.
 	spring.aop.proxy-target-class=true # Whether subclass-based (CGLIB) proxies are to be created (true), as opposed to standard Java interface-based proxies (false).
 
 	# IDENTITY ({sc-spring-boot}/context/ContextIdApplicationContextInitializer.{sc-ext}[ContextIdApplicationContextInitializer])
-	spring.application.index= # Application index.
 	spring.application.name= # Application name.
 
 	# ADMIN ({sc-spring-boot-autoconfigure}/admin/SpringApplicationAdminJmxAutoConfiguration.{sc-ext}[SpringApplicationAdminJmxAutoConfiguration])
@@ -121,7 +120,7 @@ content into your application. Rather, pick only the properties that you need.
 
 	# INTERNATIONALIZATION ({sc-spring-boot-autoconfigure}/context/MessageSourceProperties.{sc-ext}[MessageSourceProperties])
 	spring.messages.always-use-message-format=false # Whether to always apply the MessageFormat rules, parsing even messages without arguments.
-	spring.messages.basename=messages # Comma-separated list of basenames, each following the ResourceBundle convention.
+	spring.messages.basename=messages # Comma-separated list of basenames (essentially a fully-qualified classpath location), each following the ResourceBundle convention with relaxed support for slash based locations.
 	spring.messages.cache-duration=-1 # Loaded resource bundle files cache duration. When not set, bundles are cached forever.
 	spring.messages.encoding=UTF-8 # Message bundles encoding.
 	spring.messages.fallback-to-system-locale=true # Whether to fall back to the system Locale if no files for a specific Locale have been found.
@@ -339,6 +338,19 @@ content into your application. Rather, pick only the properties that you need.
 	spring.jackson.property-naming-strategy= # One of the constants on Jackson's PropertyNamingStrategy. Can also be a fully-qualified class name of a PropertyNamingStrategy subclass.
 	spring.jackson.serialization.*= # Jackson on/off features that affect the way Java objects are serialized.
 	spring.jackson.time-zone= #  Time zone used when formatting dates. For instance, "America/Los_Angeles" or "GMT+10".
+
+	# GSON ({sc-spring-boot-autoconfigure}/gson/GsonProperties.{sc-ext}[GsonProperties])
+	spring.gson.date-format= # The format to use when serializing Date objects.
+	spring.gson.disable-html-escaping= # Whether to disable the escaping of HTML characters such as '<' '>' etc.
+	spring.gson.disable-inner-class-serialization= # Whether to exclude inner classes during serialization.
+	spring.gson.enable-complex-map-key-serialization= # Whether to enabled serialization of complex map keys (i.e. non-primitives).
+	spring.gson.exclude-fields-without-expose-annotation= # Whether to exclude all fields from consideration for serialization or deserialization that do not have the "Expose" annotation.
+	spring.gson.field-naming-policy= # The naming policy that should be applied to an object's field during serialization and deserialization.
+	spring.gson.generate-non-executable-json= # Whether to generate non executable JSON by prefixing the output with some special text.
+	spring.gson.lenient= # Whether to be lenient about parsing JSON that doesn't conform to RFC 4627.
+	spring.gson.long-serialization-policy= # Serialization policy for Long and long types.
+	spring.gson.pretty-printing= # Whether to output serialized JSON that fits in a page for pretty printing.
+	spring.gson.serialize-nulls= # Whether to to serialize null fields.
 
 	# JERSEY ({sc-spring-boot-autoconfigure}/jersey/JerseyProperties.{sc-ext}[JerseyProperties])
 	spring.jersey.application-path= # Path that serves as the base URI for the application. If specified, overrides the value of "@ApplicationPath".
@@ -629,6 +641,7 @@ content into your application. Rather, pick only the properties that you need.
 
 	# DATA REST ({sc-spring-boot-autoconfigure}/data/rest/RepositoryRestProperties.{sc-ext}[RepositoryRestProperties])
 	spring.data.rest.base-path= # Base path to be used by Spring Data REST to expose repository resources.
+	spring.data.rest.default-media-type= # Content type to use as a default when none is specified.
 	spring.data.rest.default-page-size= # Default size of pages.
 	spring.data.rest.detection-strategy=default # Strategy to use to determine which repositories get exposed.
 	spring.data.rest.enable-enum-translation= # Whether to enable enum value translation through the Spring Data REST default resource bundle.
@@ -1277,8 +1290,10 @@ content into your application. Rather, pick only the properties that you need.
 	management.metrics.export.atlas.step=1m # Step size (i.e. reporting frequency) to use.
 	management.metrics.export.atlas.uri= # URI of the Atlas server.
 	management.metrics.export.datadog.api-key= # Datadog API key.
+	management.metrics.export.datadog.application-key= # Datadog application key.
 	management.metrics.export.datadog.batch-size= # Number of measurements per request to use for the backend. If more measurements are found, then multiple requests will be made.
 	management.metrics.export.datadog.connect-timeout= # Connection timeout for requests to the backend.
+	management.metrics.export.datadog.descriptions= # Whether to publish descriptions metadata to Datadog. Turn this off to minimize the amount of metadata sent.
 	management.metrics.export.datadog.enabled=true # Whether exporting of metrics to this backend is enabled.
 	management.metrics.export.datadog.host-tag= # Tag that will be mapped to "host" when shipping metrics to Datadog. Can be omitted if host should be omitted on publishing.
 	management.metrics.export.datadog.num-threads= # Number of threads to use with the metrics publishing scheduler.
@@ -1315,6 +1330,7 @@ content into your application. Rather, pick only the properties that you need.
 	management.metrics.export.influx.uri= # URI of the Influx server.
 	management.metrics.export.influx.user-name= # Login user of the Influx server.
 	management.metrics.export.jmx.enabled=true # Whether exporting of metrics to JMX is enabled.
+	management.metrics.export.jmx.step= # Step size (i.e. reporting frequency) to use.
 	management.metrics.export.prometheus.descriptions= # Enable publishing descriptions as part of the scrape payload to Prometheus. Turn this off to minimize the amount of data sent on each scrape.
 	management.metrics.export.prometheus.enabled=true # Whether exporting of metrics to Prometheus is enabled.
 	management.metrics.export.prometheus.step= # Step size (i.e. reporting frequency) to use.

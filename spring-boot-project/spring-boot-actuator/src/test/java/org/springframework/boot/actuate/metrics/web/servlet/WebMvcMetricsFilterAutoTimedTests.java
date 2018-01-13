@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -39,7 +40,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
-import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -75,8 +75,6 @@ public class WebMvcMetricsFilterAutoTimedTests {
 	@Test
 	public void metricsCanBeAutoTimed() throws Exception {
 		this.mvc.perform(get("/api/10")).andExpect(status().isOk());
-
-		this.clock.add(SimpleConfig.DEFAULT_STEP);
 		assertThat(
 				this.registry.find("http.server.requests").tags("status", "200").timer())
 						.hasValueSatisfying((t) -> assertThat(t.count()).isEqualTo(1));
@@ -104,9 +102,8 @@ public class WebMvcMetricsFilterAutoTimedTests {
 		}
 
 		@Bean
-		public WebMvcMetricsFilter webMetricsFilter(WebMvcMetrics controllerMetrics,
-				HandlerMappingIntrospector introspector) {
-			return new WebMvcMetricsFilter(controllerMetrics, introspector);
+		public WebMvcMetricsFilter webMetricsFilter(ApplicationContext context) {
+			return new WebMvcMetricsFilter(context);
 		}
 
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.springframework.boot.actuate.autoconfigure.cloudfoundry.CloudFoundryHealthWebEndpointAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.endpoint.web.WebEndpointAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.health.HealthEndpointAutoConfiguration;
@@ -86,6 +85,7 @@ public class CloudFoundryActuatorAutoConfigurationTests {
 				ManagementContextAutoConfiguration.class,
 				ServletManagementContextAutoConfiguration.class,
 				EndpointAutoConfiguration.class, WebEndpointAutoConfiguration.class,
+				HealthEndpointAutoConfiguration.class,
 				CloudFoundryActuatorAutoConfiguration.class);
 	}
 
@@ -248,8 +248,6 @@ public class CloudFoundryActuatorAutoConfigurationTests {
 				.of("VCAP_APPLICATION:---", "vcap.application.application_id:my-app-id",
 						"vcap.application.cf_api:http://my-cloud-controller.com")
 				.applyTo(this.context);
-		this.context.register(HealthEndpointAutoConfiguration.class,
-				CloudFoundryHealthWebEndpointAutoConfiguration.class);
 		this.context.refresh();
 		Collection<EndpointInfo<WebOperation>> endpoints = this.context
 				.getBean("cloudFoundryWebEndpointServletHandlerMapping",
