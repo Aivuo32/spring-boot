@@ -22,6 +22,11 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 
+import com.arjuna.ats.internal.jdbc.drivers.modifiers.ModifierFactory;
+import com.arjuna.ats.internal.jdbc.drivers.modifiers.SupportsMultipleConnectionsModifier;
+
+import nl.topicus.jdbc.CloudSpannerDriver;
+
 @SpringBootApplication
 public class SampleNarayanaApplication
 {
@@ -29,6 +34,9 @@ public class SampleNarayanaApplication
 	public static void main(String[] args) throws Exception
 	{
 		ApplicationContext context = SpringApplication.run(SampleNarayanaApplication.class, args);
+		// Add modifier for Cloud Spanner driver.
+		ModifierFactory.putModifier(CloudSpannerDriver.class.getName(), -1, -1,
+				SupportsMultipleConnectionsModifier.class.getName());
 		AccountService service = context.getBean(AccountService.class);
 		AccountRepository repository = context.getBean(AccountRepository.class);
 		service.createAccountAndNotify(1L, "josh");
