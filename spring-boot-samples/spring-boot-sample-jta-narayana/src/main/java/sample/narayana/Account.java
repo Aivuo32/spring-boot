@@ -32,8 +32,9 @@ public class Account
 	{
 	}
 
-	public Account(String username)
+	public Account(Long id, String username)
 	{
+		this.id = id;
 		this.username = username;
 	}
 

@@ -23,21 +23,25 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Transactional
-public class AccountService {
+public class AccountService
+{
 
 	private final JmsTemplate jmsTemplate;
 
 	private final AccountRepository accountRepository;
 
-	public AccountService(JmsTemplate jmsTemplate, AccountRepository accountRepository) {
+	public AccountService(JmsTemplate jmsTemplate, AccountRepository accountRepository)
+	{
 		this.jmsTemplate = jmsTemplate;
 		this.accountRepository = accountRepository;
 	}
 
-	public void createAccountAndNotify(String username) {
+	public void createAccountAndNotify(Long id, String username)
+	{
 		this.jmsTemplate.convertAndSend("accounts", username);
-		this.accountRepository.save(new Account(username));
-		if ("error".equals(username)) {
+		this.accountRepository.save(new Account(id, username));
+		if ("error".equals(username))
+		{
 			throw new SampleRuntimeException("Simulated error");
 		}
 	}

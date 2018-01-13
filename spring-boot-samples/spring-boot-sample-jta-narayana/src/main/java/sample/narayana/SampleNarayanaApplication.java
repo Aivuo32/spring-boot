@@ -23,20 +23,24 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 
 @SpringBootApplication
-public class SampleNarayanaApplication {
+public class SampleNarayanaApplication
+{
 
-	public static void main(String[] args) throws Exception {
-		ApplicationContext context = SpringApplication
-				.run(SampleNarayanaApplication.class, args);
+	public static void main(String[] args) throws Exception
+	{
+		ApplicationContext context = SpringApplication.run(SampleNarayanaApplication.class, args);
 		AccountService service = context.getBean(AccountService.class);
 		AccountRepository repository = context.getBean(AccountRepository.class);
-		service.createAccountAndNotify("josh");
+		service.createAccountAndNotify(1L, "josh");
 		System.out.println("Count is " + repository.count());
-		try {
-			// Using username "error" will cause service to throw SampleRuntimeException
-			service.createAccountAndNotify("error");
+		try
+		{
+			// Using username "error" will cause service to throw
+			// SampleRuntimeException
+			service.createAccountAndNotify(2L, "error");
 		}
-		catch (SampleRuntimeException ex) {
+		catch (SampleRuntimeException ex)
+		{
 			// Log message to let test case know that exception was thrown
 			System.out.println(ex.getMessage());
 		}
