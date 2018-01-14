@@ -5,8 +5,8 @@
 	<parent>
 		<!-- Your own application should inherit from spring-boot-starter-parent -->
 		<groupId>org.springframework.boot</groupId>
-		<artifactId>spring-boot-samples</artifactId>
-		<version>${revision}</version>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>1.5.9.RELEASE</version>
 	</parent>
 	<artifactId>spring-boot-sample-data-rest</artifactId>
 	<name>Spring Boot Data REST Sample</name>
@@ -46,7 +46,7 @@
 		<dependency>
 			<groupId>nl.topicus</groupId>
 			<artifactId>spanner-hibernate</artifactId>
-			<version>0.4</version>
+			<version>0.5</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.uuid</groupId>
