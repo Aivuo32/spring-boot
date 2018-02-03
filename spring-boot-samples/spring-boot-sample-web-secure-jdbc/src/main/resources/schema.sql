@@ -1,10 +1,23 @@
+
+-- Automatically batch DDL statements together
+SET_CONNECTION_PROPERTY AutoBatchDdlOperations=true;
+
 create table users (
-  username varchar(256),
-  password varchar(256),
-  enabled boolean
-);
+  username string(256),
+  password string(256),
+  enabled bool
+)
+PRIMARY KEY (username)
+;
 
 create table authorities (
-  username varchar(256),
-  authority varchar(256)
-);
+  username string(256),
+  authority string(256)
+)
+PRIMARY KEY (username, authority)
+;
+
+-- Execute DDL batch
+EXECUTE_DDL_BATCH;
+-- Reset property to original value
+RESET_CONNECTION_PROPERTY AutoBatchDdlOperations;
