@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,8 @@ import java.util.stream.Stream;
 
 import reactor.core.publisher.Mono;
 
-import org.springframework.boot.actuate.autoconfigure.endpoint.web.EndpointPathProvider;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
+import org.springframework.boot.actuate.endpoint.web.PathMappedEndpoints;
 import org.springframework.boot.security.reactive.ApplicationContextServerWebExchangeMatcher;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.security.web.server.util.matcher.OrServerWebExchangeMatcher;
@@ -39,8 +39,8 @@ import org.springframework.util.Assert;
 import org.springframework.web.server.ServerWebExchange;
 
 /**
- * Factory that can be used to create a {@link ServerWebExchangeMatcher} for actuator endpoint
- * locations.
+ * Factory that can be used to create a {@link ServerWebExchangeMatcher} for actuator
+ * endpoint locations.
  *
  * @author Madhura Bhave
  * @since 2.0.0
@@ -52,9 +52,10 @@ public final class EndpointRequest {
 
 	/**
 	 * Returns a matcher that includes all {@link Endpoint actuator endpoints}. The
-	 * {@link EndpointServerWebExchangeMatcher#excluding(Class...) excluding} method can be used to
-	 * further remove specific endpoints if required. For example: <pre class="code">
-	 * EndpointServerWebExchangeMatcher.toAnyEndpoint().excluding(ShutdownEndpoint.class)
+	 * {@link EndpointServerWebExchangeMatcher#excluding(Class...) excluding} method can
+	 * be used to further remove specific endpoints if required. For example:
+	 * <pre class="code">
+	 * EndpointRequest.toAnyEndpoint().excluding(ShutdownEndpoint.class)
 	 * </pre>
 	 * @return the configured {@link ServerWebExchangeMatcher}
 	 */
@@ -87,10 +88,11 @@ public final class EndpointRequest {
 	}
 
 	/**
-	 * The {@link ServerWebExchangeMatcher} used to match against {@link Endpoint actuator endpoints}.
+	 * The {@link ServerWebExchangeMatcher} used to match against {@link Endpoint actuator
+	 * endpoints}.
 	 */
 	public final static class EndpointServerWebExchangeMatcher
-			extends ApplicationContextServerWebExchangeMatcher<EndpointPathProvider> {
+			extends ApplicationContextServerWebExchangeMatcher<PathMappedEndpoints> {
 
 		private final List<Object> includes;
 
@@ -99,25 +101,20 @@ public final class EndpointRequest {
 		private ServerWebExchangeMatcher delegate;
 
 		private EndpointServerWebExchangeMatcher() {
-			super(EndpointPathProvider.class);
-			this.includes = Collections.emptyList();
-			this.excludes = Collections.emptyList();
+			this(Collections.emptyList(), Collections.emptyList());
 		}
 
 		private EndpointServerWebExchangeMatcher(Class<?>[] endpoints) {
-			super(EndpointPathProvider.class);
-			this.includes = Arrays.asList((Object[]) endpoints);
-			this.excludes = Collections.emptyList();
+			this(Arrays.asList((Object[]) endpoints), Collections.emptyList());
 		}
 
 		private EndpointServerWebExchangeMatcher(String[] endpoints) {
-			super(EndpointPathProvider.class);
-			this.includes = Arrays.asList((Object[]) endpoints);
-			this.excludes = Collections.emptyList();
+			this(Arrays.asList((Object[]) endpoints), Collections.emptyList());
 		}
 
-		private EndpointServerWebExchangeMatcher(List<Object> includes, List<Object> excludes) {
-			super(EndpointPathProvider.class);
+		private EndpointServerWebExchangeMatcher(List<Object> includes,
+				List<Object> excludes) {
+			super(PathMappedEndpoints.class);
 			this.includes = includes;
 			this.excludes = excludes;
 		}
@@ -135,31 +132,33 @@ public final class EndpointRequest {
 		}
 
 		@Override
-		protected void initialized(EndpointPathProvider endpointPathProvider) {
-			Set<String> paths = new LinkedHashSet<>(this.includes.isEmpty()
-					? endpointPathProvider.getPaths() : Collections.emptyList());
-			streamPaths(this.includes, endpointPathProvider).forEach(paths::add);
-			streamPaths(this.excludes, endpointPathProvider).forEach(paths::remove);
+		protected void initialized(PathMappedEndpoints pathMappedEndpoints) {
+			Set<String> paths = new LinkedHashSet<>();
+			if (this.includes.isEmpty()) {
+				paths.addAll(pathMappedEndpoints.getAllPaths());
+			}
+			streamPaths(this.includes, pathMappedEndpoints).forEach(paths::add);
+			streamPaths(this.excludes, pathMappedEndpoints).forEach(paths::remove);
 			this.delegate = new OrServerWebExchangeMatcher(getDelegateMatchers(paths));
 		}
 
 		private Stream<String> streamPaths(List<Object> source,
-				EndpointPathProvider endpointPathProvider) {
-			return source.stream().filter(Objects::nonNull).map(this::getPathId)
-					.map(endpointPathProvider::getPath);
+				PathMappedEndpoints pathMappedEndpoints) {
+			return source.stream().filter(Objects::nonNull).map(this::getEndpointId)
+					.map(pathMappedEndpoints::getPath);
 		}
 
-		private String getPathId(Object source) {
+		private String getEndpointId(Object source) {
 			if (source instanceof String) {
 				return (String) source;
 			}
 			if (source instanceof Class) {
-				return getPathId((Class<?>) source);
+				return getEndpointId((Class<?>) source);
 			}
 			throw new IllegalStateException("Unsupported source " + source);
 		}
 
-		private String getPathId(Class<?> source) {
+		private String getEndpointId(Class<?> source) {
 			Endpoint annotation = AnnotationUtils.findAnnotation(source, Endpoint.class);
 			Assert.state(annotation != null,
 					() -> "Class " + source + " is not annotated with @Endpoint");
@@ -167,13 +166,14 @@ public final class EndpointRequest {
 		}
 
 		private List<ServerWebExchangeMatcher> getDelegateMatchers(Set<String> paths) {
-			return paths.stream().map((path) -> new PathPatternParserServerWebExchangeMatcher(path + "/**"))
+			return paths.stream().map(
+					(path) -> new PathPatternParserServerWebExchangeMatcher(path + "/**"))
 					.collect(Collectors.toList());
 		}
 
 		@Override
 		protected Mono<MatchResult> matches(ServerWebExchange exchange,
-				EndpointPathProvider context) {
+				PathMappedEndpoints context) {
 			return this.delegate.matches(exchange);
 		}
 

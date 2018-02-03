@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -168,6 +168,12 @@ public class UndertowServletWebServer implements WebServer {
 		}
 	}
 
+	public DeploymentManager getDeploymentManager() {
+		synchronized (this.monitor) {
+			return this.manager;
+		}
+	}
+
 	private void stopSilently() {
 		try {
 			if (this.undertow != null) {
@@ -315,7 +321,7 @@ public class UndertowServletWebServer implements WebServer {
 	/**
 	 * An active Undertow port.
 	 */
-	private final static class Port {
+	private static final class Port {
 
 		private final int number;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,10 +104,9 @@ public class SessionAutoConfiguration {
 	/**
 	 * {@link ImportSelector} base class to add {@link StoreType} configuration classes.
 	 */
-	static abstract class SessionConfigurationImportSelector implements ImportSelector {
+	abstract static class SessionConfigurationImportSelector implements ImportSelector {
 
-		protected final String[] selectImports(AnnotationMetadata importingClassMetadata,
-				WebApplicationType webApplicationType) {
+		protected final String[] selectImports(WebApplicationType webApplicationType) {
 			List<String> imports = new ArrayList<>();
 			StoreType[] types = StoreType.values();
 			for (int i = 0; i < types.length; i++) {
@@ -128,8 +127,7 @@ public class SessionAutoConfiguration {
 
 		@Override
 		public String[] selectImports(AnnotationMetadata importingClassMetadata) {
-			return super.selectImports(importingClassMetadata,
-					WebApplicationType.REACTIVE);
+			return super.selectImports(WebApplicationType.REACTIVE);
 		}
 
 	}
@@ -143,8 +141,7 @@ public class SessionAutoConfiguration {
 
 		@Override
 		public String[] selectImports(AnnotationMetadata importingClassMetadata) {
-			return super.selectImports(importingClassMetadata,
-					WebApplicationType.SERVLET);
+			return super.selectImports(WebApplicationType.SERVLET);
 		}
 
 	}
@@ -153,7 +150,7 @@ public class SessionAutoConfiguration {
 	 * Base class for beans used to validate that only one supported implementation is
 	 * available in the classpath when the store-type property is not set.
 	 */
-	static abstract class AbstractSessionRepositoryImplementationValidator {
+	abstract static class AbstractSessionRepositoryImplementationValidator {
 
 		private final List<String> candidates;
 
@@ -233,7 +230,7 @@ public class SessionAutoConfiguration {
 	/**
 	 * Base class for validating that a (reactive) session repository bean exists.
 	 */
-	static abstract class AbstractSessionRepositoryValidator {
+	abstract static class AbstractSessionRepositoryValidator {
 
 		private final SessionProperties sessionProperties;
 

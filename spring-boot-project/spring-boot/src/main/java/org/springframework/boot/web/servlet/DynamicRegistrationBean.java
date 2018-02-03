@@ -58,8 +58,8 @@ public abstract class DynamicRegistrationBean<D extends Registration.Dynamic>
 	}
 
 	/**
-	 * Sets if asynchronous operations are support for this registration. If not specified
-	 * defaults to {@code true}.
+	 * Sets if asynchronous operations are supported for this registration. If not
+	 * specified defaults to {@code true}.
 	 * @param asyncSupported if async is supported
 	 */
 	public void setAsyncSupported(boolean asyncSupported) {
@@ -67,7 +67,7 @@ public abstract class DynamicRegistrationBean<D extends Registration.Dynamic>
 	}
 
 	/**
-	 * Returns if asynchronous operations are support for this registration.
+	 * Returns if asynchronous operations are supported for this registration.
 	 * @return if async is supported
 	 */
 	public boolean isAsyncSupported() {
@@ -112,9 +112,6 @@ public abstract class DynamicRegistrationBean<D extends Registration.Dynamic>
 					+ "(possibly already registered?)");
 			return;
 		}
-		Assert.state(registration != null,
-				() -> "Registration is null. Was something already registered for "
-						+ description + "?");
 		configure(registration);
 	}
 

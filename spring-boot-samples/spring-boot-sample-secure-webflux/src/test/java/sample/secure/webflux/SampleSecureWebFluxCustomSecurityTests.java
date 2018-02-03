@@ -23,6 +23,7 @@ import org.junit.runner.RunWith;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.autoconfigure.security.reactive.EndpointRequest;
+import org.springframework.boot.autoconfigure.security.reactive.PathRequest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -41,7 +42,8 @@ import org.springframework.test.web.reactive.server.WebTestClient;
  * @author Madhura Bhave
  */
 @RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = { SampleSecureWebFluxCustomSecurityTests.SecurityConfiguration.class,
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = {
+		SampleSecureWebFluxCustomSecurityTests.SecurityConfiguration.class,
 		SampleSecureWebFluxApplication.class })
 public class SampleSecureWebFluxCustomSecurityTests {
 
@@ -55,13 +57,13 @@ public class SampleSecureWebFluxCustomSecurityTests {
 	}
 
 	@Test
-	public void healthAndInfoDontRequireAuthentication() {
+	public void healthAndInfoDoNotRequireAuthentication() {
 		this.webClient.get().uri("/actuator/health").accept(MediaType.APPLICATION_JSON)
 				.exchange().expectStatus().isOk();
 		this.webClient.get().uri("/actuator/info").accept(MediaType.APPLICATION_JSON)
 				.exchange().expectStatus().isOk();
 	}
-	
+
 	@Test
 	public void actuatorsSecuredByRole() {
 		this.webClient.get().uri("/actuator/env").accept(MediaType.APPLICATION_JSON)
@@ -76,28 +78,32 @@ public class SampleSecureWebFluxCustomSecurityTests {
 				.expectStatus().isOk();
 	}
 
+	@Test
+	public void staticResourceShouldBeAccessible() {
+		this.webClient.get().uri("/css/bootstrap.min.css")
+				.accept(MediaType.APPLICATION_JSON).exchange().expectStatus().isOk();
+	}
+
 	@Configuration
 	static class SecurityConfiguration {
 
 		@Bean
 		public MapReactiveUserDetailsService userDetailsService() {
 			return new MapReactiveUserDetailsService(
-					User.withDefaultPasswordEncoder().username("user").password("password")
-							.authorities("ROLE_USER").build(),
+					User.withDefaultPasswordEncoder().username("user")
+							.password("password").authorities("ROLE_USER").build(),
 					User.withDefaultPasswordEncoder().username("admin").password("admin")
 							.authorities("ROLE_ACTUATOR", "ROLE_USER").build());
 		}
 
 		@Bean
-		SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
-			http
-					.authorizeExchange()
-					.matchers(EndpointRequest.to("health", "info")).permitAll()
-					.matchers(EndpointRequest.toAnyEndpoint()).hasRole("ACTUATOR")
-					.pathMatchers("/login").permitAll()
-					.anyExchange().authenticated()
-					.and()
-					.httpBasic();
+		public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
+			http.authorizeExchange().matchers(EndpointRequest.to("health", "info"))
+					.permitAll().matchers(EndpointRequest.toAnyEndpoint())
+					.hasRole("ACTUATOR")
+					.matchers(PathRequest.toStaticResources().atCommonLocations())
+					.permitAll().pathMatchers("/login").permitAll().anyExchange()
+					.authenticated().and().httpBasic();
 			return http.build();
 		}
 
@@ -112,4 +118,3 @@ public class SampleSecureWebFluxCustomSecurityTests {
 	}
 
 }
-

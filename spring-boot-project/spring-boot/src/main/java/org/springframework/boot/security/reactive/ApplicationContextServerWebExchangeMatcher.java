@@ -26,8 +26,8 @@ import org.springframework.util.Assert;
 import org.springframework.web.server.ServerWebExchange;
 
 /**
- * {@link ApplicationContext} backed {@link ServerWebExchangeMatcher}. Can work directly with the
- * {@link ApplicationContext}, obtain an existing bean or
+ * {@link ApplicationContext} backed {@link ServerWebExchangeMatcher}. Can work directly
+ * with the {@link ApplicationContext}, obtain an existing bean or
  * {@link AutowireCapableBeanFactory#createBean(Class, int, boolean) create a new bean}
  * that is autowired in the usual way.
  *
@@ -38,13 +38,14 @@ import org.springframework.web.server.ServerWebExchange;
  * @author Madhura Bhave
  * @since 2.0.0
  */
-public abstract class ApplicationContextServerWebExchangeMatcher<C> implements ServerWebExchangeMatcher {
+public abstract class ApplicationContextServerWebExchangeMatcher<C>
+		implements ServerWebExchangeMatcher {
 
 	private final Class<? extends C> contextClass;
 
-	private C context;
+	private volatile C context;
 
-	private Object contextLock = new Object();
+	private final Object contextLock = new Object();
 
 	public ApplicationContextServerWebExchangeMatcher(Class<? extends C> contextClass) {
 		Assert.notNull(contextClass, "Context class must not be null");
@@ -67,8 +68,10 @@ public abstract class ApplicationContextServerWebExchangeMatcher<C> implements S
 	protected C getContext(ServerWebExchange exchange) {
 		if (this.context == null) {
 			synchronized (this.contextLock) {
-				this.context = createContext(exchange);
-				initialized(this.context);
+				if (this.context == null) {
+					this.context = createContext(exchange);
+					initialized(this.context);
+				}
 			}
 		}
 		return this.context;
@@ -84,9 +87,7 @@ public abstract class ApplicationContextServerWebExchangeMatcher<C> implements S
 	@SuppressWarnings("unchecked")
 	private C createContext(ServerWebExchange exchange) {
 		ApplicationContext context = exchange.getApplicationContext();
-		if (context == null) {
-			throw new IllegalStateException("No WebApplicationContext found.");
-		}
+		Assert.state(context != null, "No WebApplicationContext found.");
 		if (this.contextClass.isInstance(context)) {
 			return (C) context;
 		}
@@ -101,4 +102,3 @@ public abstract class ApplicationContextServerWebExchangeMatcher<C> implements S
 	}
 
 }
-

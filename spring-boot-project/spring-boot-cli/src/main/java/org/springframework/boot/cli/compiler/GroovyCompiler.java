@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -257,7 +257,7 @@ public class GroovyCompiler {
 		});
 	}
 
-	private int getIndexOfASTTransformationVisitor(LinkedList<?> conversionOperations) {
+	private int getIndexOfASTTransformationVisitor(List<?> conversionOperations) {
 		for (int index = 0; index < conversionOperations.size(); index++) {
 			if (conversionOperations.get(index).getClass().getName()
 					.startsWith(ASTTransformationVisitor.class.getName())) {
@@ -280,8 +280,7 @@ public class GroovyCompiler {
 		public void call(SourceUnit source, GeneratorContext context, ClassNode classNode)
 				throws CompilationFailedException {
 
-			ImportCustomizer importCustomizer = new SmartImportCustomizer(source, context,
-					classNode);
+			ImportCustomizer importCustomizer = new SmartImportCustomizer(source);
 			ClassNode mainClassNode = MainClass.get(source.getAST().getClasses());
 
 			// Additional auto configuration

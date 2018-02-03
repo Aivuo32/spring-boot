@@ -16,7 +16,7 @@
 
 package org.springframework.boot.configurationprocessor.json;
 
-// Note: this class was written without inspecting the non-free org.json sourcecode.
+// Note: this class was written without inspecting the non-free org.json source code.
 
 /**
  * Parses a JSON (<a href="http://www.ietf.org/rfc/rfc4627.txt">RFC 4627</a>) encoded
@@ -279,7 +279,7 @@ public class JSONTokener {
 	private Object readLiteral() throws JSONException {
 		String literal = nextToInternal("{}[]/\\:,=;# \t\f");
 
-		if (literal.length() == 0) {
+		if (literal.isEmpty()) {
 			throw syntaxError("Expected literal value");
 		}
 		else if ("null".equalsIgnoreCase(literal)) {

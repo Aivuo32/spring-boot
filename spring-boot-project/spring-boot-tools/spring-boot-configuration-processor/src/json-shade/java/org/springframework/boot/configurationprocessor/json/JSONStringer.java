@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-// Note: this class was written without inspecting the non-free org.json sourcecode.
+// Note: this class was written without inspecting the non-free org.json source code.
 
 /**
  * Implements {@link JSONObject#toString} and {@link JSONArray#toString}. Most application
@@ -109,7 +109,7 @@ public class JSONStringer {
 	 * Unlike the original implementation, this stack isn't limited to 20 levels of
 	 * nesting.
 	 */
-	private final List<Scope> stack = new ArrayList<Scope>();
+	private final List<Scope> stack = new ArrayList<>();
 
 	/**
 	 * A string containing a full set of spaces for a single level of indentation, or null

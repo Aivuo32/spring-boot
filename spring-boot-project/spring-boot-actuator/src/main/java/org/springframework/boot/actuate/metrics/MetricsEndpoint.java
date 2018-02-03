@@ -91,8 +91,7 @@ public class MetricsEndpoint {
 		Map<Statistic, Double> samples = getSamples(meters);
 		Map<String, Set<String>> availableTags = getAvailableTags(meters);
 		tags.forEach((t) -> availableTags.remove(t.getKey()));
-		return new MetricResponse(requiredMetricName,
-				asList(samples, Sample::new),
+		return new MetricResponse(requiredMetricName, asList(samples, Sample::new),
 				asList(availableTags, AvailableTag::new));
 	}
 
@@ -121,8 +120,14 @@ public class MetricsEndpoint {
 	}
 
 	private void mergeMeasurements(Map<Statistic, Double> samples, Meter meter) {
-		meter.measure().forEach((measurement) -> samples.merge(measurement.getStatistic(),
-				measurement.getValue(), Double::sum));
+		meter.measure()
+				.forEach((measurement) -> samples.merge(measurement.getStatistic(),
+						measurement.getValue(),
+						mergeFunction(measurement.getStatistic())));
+	}
+
+	private BiFunction<Double, Double, Double> mergeFunction(Statistic statistic) {
+		return Statistic.MAX.equals(statistic) ? Double::max : Double::sum;
 	}
 
 	private Map<String, Set<String>> getAvailableTags(List<Meter> meters) {

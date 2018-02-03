@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-// Note: this class was written without inspecting the non-free org.json sourcecode.
+// Note: this class was written without inspecting the non-free org.json source code.
 
 /**
  * A modifiable set of name/value mappings. Names are unique, non-null strings. Values may
@@ -111,7 +111,7 @@ public class JSONObject {
 	 * Creates a {@code JSONObject} with no name/value mappings.
 	 */
 	public JSONObject() {
-		this.nameValuePairs = new HashMap<String, Object>();
+		this.nameValuePairs = new HashMap<>();
 	}
 
 	/**
@@ -691,7 +691,7 @@ public class JSONObject {
 	 */
 	public JSONArray names() {
 		return this.nameValuePairs.isEmpty() ? null
-				: new JSONArray(new ArrayList<String>(this.nameValuePairs.keySet()));
+				: new JSONArray(new ArrayList<>(this.nameValuePairs.keySet()));
 	}
 
 	/**

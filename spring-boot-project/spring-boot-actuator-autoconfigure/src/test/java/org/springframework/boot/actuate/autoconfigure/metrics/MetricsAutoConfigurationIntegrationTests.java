@@ -19,10 +19,12 @@ package org.springframework.boot.actuate.autoconfigure.metrics;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CyclicBarrier;
+
+import javax.servlet.DispatcherType;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.MockClock;
-import io.micrometer.core.instrument.Statistic;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics;
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics;
@@ -32,6 +34,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.metrics.web.servlet.WebMvcMetricsFilter;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.http.HttpMessageConvertersAutoConfiguration;
 import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
@@ -43,14 +46,17 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -94,15 +100,15 @@ public class MetricsAutoConfigurationIntegrationTests {
 						"{\"message\": \"hello\"}", MediaType.APPLICATION_JSON));
 		assertThat(this.external.getForObject("/api/external", Map.class))
 				.containsKey("message");
-		assertThat(this.registry.find("http.client.requests").value(Statistic.Count, 1.0)
-				.timer()).isPresent();
+		assertThat(this.registry.get("http.client.requests").timer().count())
+				.isEqualTo(1);
 	}
 
 	@Test
 	public void requestMappingIsInstrumented() {
 		this.loopback.getForObject("/api/people", Set.class);
-		assertThat(this.registry.find("http.server.requests").value(Statistic.Count, 1.0)
-				.timer()).isPresent();
+		assertThat(this.registry.get("http.server.requests").timer().count())
+				.isEqualTo(1);
 	}
 
 	@Test
@@ -110,6 +116,20 @@ public class MetricsAutoConfigurationIntegrationTests {
 		assertThat(this.context.getBeansOfType(MeterBinder.class).values())
 				.hasAtLeastOneElementOfType(LogbackMetrics.class)
 				.hasAtLeastOneElementOfType(JvmMemoryMetrics.class);
+	}
+
+	@Test
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public void metricsFilterRegisteredForAsyncDispatches() {
+		Map<String, FilterRegistrationBean> filterRegistrations = this.context
+				.getBeansOfType(FilterRegistrationBean.class);
+		assertThat(filterRegistrations).containsKey("webMvcMetricsFilter");
+		FilterRegistrationBean registration = filterRegistrations
+				.get("webMvcMetricsFilter");
+		assertThat(registration.getFilter()).isInstanceOf(WebMvcMetricsFilter.class);
+		assertThat((Set<DispatcherType>) ReflectionTestUtils.getField(registration,
+				"dispatcherTypes")).containsExactlyInAnyOrder(DispatcherType.REQUEST,
+						DispatcherType.ASYNC);
 	}
 
 	@Configuration
@@ -121,6 +141,7 @@ public class MetricsAutoConfigurationIntegrationTests {
 	@Import(PersonController.class)
 	static class MetricsApp {
 
+		@Primary
 		@Bean
 		public MeterRegistry registry() {
 			return new SimpleMeterRegistry(SimpleConfig.DEFAULT, new MockClock());
@@ -129,6 +150,11 @@ public class MetricsAutoConfigurationIntegrationTests {
 		@Bean
 		public RestTemplate restTemplate(RestTemplateBuilder restTemplateBuilder) {
 			return restTemplateBuilder.build();
+		}
+
+		@Bean
+		public CyclicBarrier cyclicBarrier() {
+			return new CyclicBarrier(2);
 		}
 
 	}

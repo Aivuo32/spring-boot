@@ -42,8 +42,8 @@ import org.springframework.util.Assert;
 
 /**
  * {@link WebServer} that can be used to control a Tomcat web server. Usually this class
- * should be created using the {@link TomcatReactiveWebServerFactory}
- * of {@link TomcatServletWebServerFactory}, but not directly.
+ * should be created using the {@link TomcatReactiveWebServerFactory} of
+ * {@link TomcatServletWebServerFactory}, but not directly.
  *
  * @author Brian Clozel
  * @author Kristine Jetzke
@@ -190,7 +190,7 @@ public class TomcatWebServer implements WebServer {
 				addPreviouslyRemovedConnectors();
 				Connector connector = this.tomcat.getConnector();
 				if (connector != null && this.autoStart) {
-					startConnector(connector);
+					startConnector();
 				}
 				checkThatConnectorsHaveStarted();
 				this.started = true;
@@ -264,7 +264,7 @@ public class TomcatWebServer implements WebServer {
 		}
 	}
 
-	private void startConnector(Connector connector) {
+	private void startConnector() {
 		try {
 			for (Container child : this.tomcat.getHost().findChildren()) {
 				if (child instanceof TomcatEmbeddedContext) {

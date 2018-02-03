@@ -16,20 +16,23 @@
 
 package org.springframework.boot.actuate.autoconfigure.metrics.web.servlet;
 
+import javax.servlet.DispatcherType;
+
 import io.micrometer.core.instrument.MeterRegistry;
 
 import org.springframework.boot.actuate.autoconfigure.metrics.MetricsProperties;
+import org.springframework.boot.actuate.autoconfigure.metrics.MetricsProperties.Web.Server;
 import org.springframework.boot.actuate.metrics.web.servlet.DefaultWebMvcTagsProvider;
-import org.springframework.boot.actuate.metrics.web.servlet.WebMvcMetrics;
 import org.springframework.boot.actuate.metrics.web.servlet.WebMvcMetricsFilter;
 import org.springframework.boot.actuate.metrics.web.servlet.WebMvcTagsProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.ApplicationContext;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.servlet.DispatcherServlet;
 
 /**
@@ -46,22 +49,22 @@ public class WebMvcMetricsConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean(WebMvcTagsProvider.class)
-	public DefaultWebMvcTagsProvider webmvcTagConfigurer() {
+	public DefaultWebMvcTagsProvider webMvcTagsProvider() {
 		return new DefaultWebMvcTagsProvider();
 	}
 
 	@Bean
-	public WebMvcMetrics controllerMetrics(MeterRegistry registry,
-			MetricsProperties properties, WebMvcTagsProvider configurer) {
-		return new WebMvcMetrics(registry, configurer,
-				properties.getWeb().getServer().getRequestsMetricName(),
-				properties.getWeb().getServer().isAutoTimeRequests(),
-				properties.getWeb().getServer().isRecordRequestPercentiles());
-	}
-
-	@Bean
-	public WebMvcMetricsFilter webMetricsFilter(ApplicationContext context) {
-		return new WebMvcMetricsFilter(context);
+	public FilterRegistrationBean<WebMvcMetricsFilter> webMvcMetricsFilter(
+			MeterRegistry registry, MetricsProperties properties,
+			WebMvcTagsProvider tagsProvider, WebApplicationContext context) {
+		Server serverProperties = properties.getWeb().getServer();
+		WebMvcMetricsFilter filter = new WebMvcMetricsFilter(context, registry,
+				tagsProvider, serverProperties.getRequestsMetricName(),
+				serverProperties.isAutoTimeRequests());
+		FilterRegistrationBean<WebMvcMetricsFilter> registration = new FilterRegistrationBean<>(
+				filter);
+		registration.setDispatcherTypes(DispatcherType.REQUEST, DispatcherType.ASYNC);
+		return registration;
 	}
 
 }

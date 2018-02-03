@@ -80,7 +80,6 @@ public class TomcatReactiveWebServerFactory extends AbstractReactiveWebServerFac
 
 	private int backgroundProcessorDelay;
 
-
 	/**
 	 * Create a new {@link TomcatServletWebServerFactory} instance.
 	 */
@@ -134,8 +133,8 @@ public class TomcatReactiveWebServerFactory extends AbstractReactiveWebServerFac
 		context.setLoader(loader);
 		Tomcat.addServlet(context, "httpHandlerServlet", servlet);
 		context.addServletMappingDecoded("/", "httpHandlerServlet");
-		configureContext(context);
 		host.addChild(context);
+		configureContext(context);
 	}
 
 	private void skipAllTldScanning(TomcatEmbeddedContext context) {
@@ -304,8 +303,8 @@ public class TomcatReactiveWebServerFactory extends AbstractReactiveWebServerFac
 	}
 
 	/**
-	 * Set {@link LifecycleListener}s that should be applied to the Tomcat {@link Context}.
-	 * Calling this method will replace any existing listeners.
+	 * Set {@link LifecycleListener}s that should be applied to the Tomcat
+	 * {@link Context}. Calling this method will replace any existing listeners.
 	 * @param contextLifecycleListeners the listeners to set
 	 */
 	public void setContextLifecycleListeners(

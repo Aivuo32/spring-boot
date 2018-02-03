@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -46,6 +45,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
+ * Test for {@link WebMvcMetricsFilter} with auto-timed enabled.
+ *
  * @author Jon Schneider
  */
 @RunWith(SpringRunner.class)
@@ -54,9 +55,6 @@ public class WebMvcMetricsFilterAutoTimedTests {
 
 	@Autowired
 	private MeterRegistry registry;
-
-	@Autowired
-	private MockClock clock;
 
 	@Autowired
 	private WebApplicationContext context;
@@ -75,9 +73,8 @@ public class WebMvcMetricsFilterAutoTimedTests {
 	@Test
 	public void metricsCanBeAutoTimed() throws Exception {
 		this.mvc.perform(get("/api/10")).andExpect(status().isOk());
-		assertThat(
-				this.registry.find("http.server.requests").tags("status", "200").timer())
-						.hasValueSatisfying((t) -> assertThat(t.count()).isEqualTo(1));
+		assertThat(this.registry.get("http.server.requests").tags("status", "200").timer()
+				.count()).isEqualTo(1L);
 	}
 
 	@Configuration
@@ -96,14 +93,10 @@ public class WebMvcMetricsFilterAutoTimedTests {
 		}
 
 		@Bean
-		public WebMvcMetrics controllerMetrics(MeterRegistry registry) {
-			return new WebMvcMetrics(registry, new DefaultWebMvcTagsProvider(),
-					"http.server.requests", true, false);
-		}
-
-		@Bean
-		public WebMvcMetricsFilter webMetricsFilter(ApplicationContext context) {
-			return new WebMvcMetricsFilter(context);
+		public WebMvcMetricsFilter webMetricsFilter(WebApplicationContext context,
+				MeterRegistry registry) {
+			return new WebMvcMetricsFilter(context, registry,
+					new DefaultWebMvcTagsProvider(), "http.server.requests", true);
 		}
 
 	}
