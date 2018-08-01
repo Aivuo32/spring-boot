@@ -20,7 +20,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration;
@@ -58,7 +57,6 @@ import org.springframework.context.annotation.Configuration;
  *
  * @author Phillip Webb
  * @author Stephane Nicoll
- * @author Phillip Webb
  * @since 2.0.0
  */
 @Configuration
@@ -125,23 +123,22 @@ public class WebEndpointAutoConfiguration {
 
 	@Bean
 	public ExposeExcludePropertyEndpointFilter<ExposableWebEndpoint> webExposeExcludePropertyEndpointFilter() {
-		Set<String> expose = this.properties.getExpose();
-		Set<String> exclude = this.properties.getExclude();
+		WebEndpointProperties.Exposure exposure = this.properties.getExposure();
 		return new ExposeExcludePropertyEndpointFilter<>(ExposableWebEndpoint.class,
-				expose, exclude, "info", "health");
+				exposure.getInclude(), exposure.getExclude(), "info", "health");
 	}
 
 	@Bean
 	public ExposeExcludePropertyEndpointFilter<ExposableControllerEndpoint> controllerExposeExcludePropertyEndpointFilter() {
-		Set<String> expose = this.properties.getExpose();
-		Set<String> exclude = this.properties.getExclude();
+		WebEndpointProperties.Exposure exposure = this.properties.getExposure();
 		return new ExposeExcludePropertyEndpointFilter<>(
-				ExposableControllerEndpoint.class, expose, exclude);
+				ExposableControllerEndpoint.class, exposure.getInclude(),
+				exposure.getExclude());
 	}
 
 	@Configuration
 	@ConditionalOnWebApplication(type = Type.SERVLET)
-	static class WebEndpointServletAutoConfiguration {
+	static class WebEndpointServletConfiguration {
 
 		@Bean
 		@ConditionalOnMissingBean(ServletEndpointsSupplier.class)

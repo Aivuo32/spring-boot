@@ -39,13 +39,14 @@ import org.springframework.util.StringUtils;
 public class ManagementServerProperties implements SecurityPrerequisite {
 
 	/**
-	 * Management endpoint HTTP port. Use the same port as the application by default.
+	 * Management endpoint HTTP port (uses the same port as the application by default).
+	 * Configure a different port to use management-specific SSL.
 	 */
 	private Integer port;
 
 	/**
-	 * Network address that to which the management endpoints should bind to. Requires a
-	 * custom management.server.port.
+	 * Network address to which the management endpoints should bind. Requires a custom
+	 * management.server.port.
 	 */
 	private InetAddress address;
 
@@ -53,11 +54,6 @@ public class ManagementServerProperties implements SecurityPrerequisite {
 
 	@NestedConfigurationProperty
 	private Ssl ssl;
-
-	/**
-	 * Add the "X-Application-Context" HTTP header in each response.
-	 */
-	private boolean addApplicationContextHeader = false;
 
 	/**
 	 * Returns the management port or {@code null} if the
@@ -98,21 +94,13 @@ public class ManagementServerProperties implements SecurityPrerequisite {
 		return this.servlet;
 	}
 
-	public boolean getAddApplicationContextHeader() {
-		return this.addApplicationContextHeader;
-	}
-
-	public void setAddApplicationContextHeader(boolean addApplicationContextHeader) {
-		this.addApplicationContextHeader = addApplicationContextHeader;
-	}
-
 	/**
 	 * Servlet properties.
 	 */
 	public static class Servlet {
 
 		/**
-		 * Management endpoint context-path. For instance, '/management'. Requires a
+		 * Management endpoint context-path (for instance, `/management`). Requires a
 		 * custom management.server.port.
 		 */
 		private String contextPath = "";

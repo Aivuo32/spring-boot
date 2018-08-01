@@ -16,6 +16,9 @@
 
 package org.springframework.boot.actuate.autoconfigure.metrics;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -27,14 +30,27 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties("management.metrics")
 public class MetricsProperties {
 
-	private final Web web = new Web();
-
 	/**
 	 * Whether auto-configured MeterRegistry implementations should be bound to the global
 	 * static registry on Metrics. For testing, set this to 'false' to maximize test
 	 * independence.
 	 */
 	private boolean useGlobalRegistry = true;
+
+	/**
+	 * Whether meter IDs starting-with the specified name should be enabled. The longest
+	 * match wins, the key `all` can also be used to configure all meters.
+	 */
+	private final Map<String, Boolean> enable = new LinkedHashMap<>();
+
+	/**
+	 * Common tags that are applied to every meter.
+	 */
+	private final Map<String, String> tags = new LinkedHashMap<>();
+
+	private final Web web = new Web();
+
+	private final Distribution distribution = new Distribution();
 
 	public boolean isUseGlobalRegistry() {
 		return this.useGlobalRegistry;
@@ -44,8 +60,20 @@ public class MetricsProperties {
 		this.useGlobalRegistry = useGlobalRegistry;
 	}
 
+	public Map<String, Boolean> getEnable() {
+		return this.enable;
+	}
+
+	public Map<String, String> getTags() {
+		return this.tags;
+	}
+
 	public Web getWeb() {
 		return this.web;
+	}
+
+	public Distribution getDistribution() {
+		return this.distribution;
 	}
 
 	public static class Web {
@@ -65,12 +93,6 @@ public class MetricsProperties {
 		public static class Client {
 
 			/**
-			 * Whether instrumented requests record percentiles histogram buckets by
-			 * default.
-			 */
-			private boolean recordRequestPercentiles;
-
-			/**
 			 * Name of the metric for sent requests.
 			 */
 			private String requestsMetricName = "http.client.requests";
@@ -81,14 +103,6 @@ public class MetricsProperties {
 			 * filter.
 			 */
 			private int maxUriTags = 100;
-
-			public boolean isRecordRequestPercentiles() {
-				return this.recordRequestPercentiles;
-			}
-
-			public void setRecordRequestPercentiles(boolean recordRequestPercentiles) {
-				this.recordRequestPercentiles = recordRequestPercentiles;
-			}
 
 			public String getRequestsMetricName() {
 				return this.requestsMetricName;
@@ -119,13 +133,6 @@ public class MetricsProperties {
 			private boolean autoTimeRequests = true;
 
 			/**
-			 * Whether or not instrumented requests record percentiles histogram buckets
-			 * by default. Can be overridden by adding '@Timed' to a request endpoint and
-			 * setting 'percentiles' to true.
-			 */
-			private boolean recordRequestPercentiles;
-
-			/**
 			 * Name of the metric for received requests.
 			 */
 			private String requestsMetricName = "http.server.requests";
@@ -138,14 +145,6 @@ public class MetricsProperties {
 				this.autoTimeRequests = autoTimeRequests;
 			}
 
-			public boolean isRecordRequestPercentiles() {
-				return this.recordRequestPercentiles;
-			}
-
-			public void setRecordRequestPercentiles(boolean recordRequestPercentiles) {
-				this.recordRequestPercentiles = recordRequestPercentiles;
-			}
-
 			public String getRequestsMetricName() {
 				return this.requestsMetricName;
 			}
@@ -154,6 +153,47 @@ public class MetricsProperties {
 				this.requestsMetricName = requestsMetricName;
 			}
 
+		}
+
+	}
+
+	public static class Distribution {
+
+		/**
+		 * Whether meter IDs starting with the specified name should publish percentile
+		 * histograms. For monitoring systems that support aggregable percentile
+		 * calculation based on a histogram, this can be set to true. For other systems,
+		 * this has no effect. The longest match wins, the key `all` can also be used to
+		 * configure all meters.
+		 */
+		private final Map<String, Boolean> percentilesHistogram = new LinkedHashMap<>();
+
+		/**
+		 * Specific computed non-aggregable percentiles to ship to the backend for meter
+		 * IDs starting-with the specified name. The longest match wins, the key `all` can
+		 * also be used to configure all meters.
+		 */
+		private final Map<String, double[]> percentiles = new LinkedHashMap<>();
+
+		/**
+		 * Specific SLA boundaries for meter IDs starting-with the specified name. The
+		 * longest match wins, the key `all` can also be used to configure all meters.
+		 * Counters will be published for each specified boundary. Values can be specified
+		 * as a long or as a Duration value (for timer meters, defaulting to ms if no unit
+		 * specified).
+		 */
+		private final Map<String, ServiceLevelAgreementBoundary[]> sla = new LinkedHashMap<>();
+
+		public Map<String, Boolean> getPercentilesHistogram() {
+			return this.percentilesHistogram;
+		}
+
+		public Map<String, double[]> getPercentiles() {
+			return this.percentiles;
+		}
+
+		public Map<String, ServiceLevelAgreementBoundary[]> getSla() {
+			return this.sla;
 		}
 
 	}

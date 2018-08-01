@@ -115,7 +115,7 @@ public class ExtendedGroovyClassLoader extends GroovyClassLoader {
 		InputStream resourceStream = super.getResourceAsStream(name);
 		if (resourceStream == null) {
 			byte[] bytes = this.classResources.get(name);
-			resourceStream = bytes == null ? null : new ByteArrayInputStream(bytes);
+			resourceStream = (bytes != null) ? new ByteArrayInputStream(bytes) : null;
 		}
 		return resourceStream;
 	}
@@ -186,7 +186,7 @@ public class ExtendedGroovyClassLoader extends GroovyClassLoader {
 				findGroovyJarsFromClassPath(urls);
 			}
 			Assert.state(!urls.isEmpty(), "Unable to find groovy JAR");
-			return new ArrayList<>(urls).toArray(new URL[urls.size()]);
+			return new ArrayList<>(urls).toArray(new URL[0]);
 		}
 
 		private void findGroovyJarsDirectly(ClassLoader classLoader, Set<URL> urls) {

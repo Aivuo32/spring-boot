@@ -31,6 +31,7 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * A {@link ServletContextInitializer} to register {@link Servlet}s in a Servlet 3.0+
@@ -100,20 +101,20 @@ public class ServletRegistrationBean<T extends Servlet>
 	}
 
 	/**
-	 * Returns the servlet being registered.
-	 * @return the servlet
-	 */
-	protected T getServlet() {
-		return this.servlet;
-	}
-
-	/**
 	 * Sets the servlet to be registered.
 	 * @param servlet the servlet
 	 */
 	public void setServlet(T servlet) {
 		Assert.notNull(servlet, "Servlet must not be null");
 		this.servlet = servlet;
+	}
+
+	/**
+	 * Return the servlet being registered.
+	 * @return the servlet
+	 */
+	public T getServlet() {
+		return this.servlet;
 	}
 
 	/**
@@ -128,7 +129,8 @@ public class ServletRegistrationBean<T extends Servlet>
 	}
 
 	/**
-	 * Return a mutable collection of the URL mappings for the servlet.
+	 * Return a mutable collection of the URL mappings, as defined in the Servlet
+	 * specification, for the servlet.
 	 * @return the urlMappings
 	 */
 	public Collection<String> getUrlMappings() {
@@ -136,7 +138,7 @@ public class ServletRegistrationBean<T extends Servlet>
 	}
 
 	/**
-	 * Add URL mappings for the servlet.
+	 * Add URL mappings, as defined in the Servlet specification, for the servlet.
 	 * @param urlMappings the mappings to add
 	 * @see #setUrlMappings(Collection)
 	 */
@@ -193,8 +195,7 @@ public class ServletRegistrationBean<T extends Servlet>
 	@Override
 	protected void configure(ServletRegistration.Dynamic registration) {
 		super.configure(registration);
-		String[] urlMapping = this.urlMappings
-				.toArray(new String[this.urlMappings.size()]);
+		String[] urlMapping = StringUtils.toStringArray(this.urlMappings);
 		if (urlMapping.length == 0 && this.alwaysMapUrl) {
 			urlMapping = DEFAULT_MAPPINGS;
 		}
@@ -214,4 +215,5 @@ public class ServletRegistrationBean<T extends Servlet>
 	public String getServletName() {
 		return getOrDeduceName(this.servlet);
 	}
+
 }

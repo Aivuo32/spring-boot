@@ -44,8 +44,6 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPInputStream;
@@ -57,6 +55,8 @@ import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.GenericServlet;
 import javax.servlet.ServletContext;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -120,6 +120,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -621,8 +622,8 @@ public abstract class AbstractServletWebServerFactoryTests {
 				httpClient);
 		assertThat(getResponse(getLocalUrl("https", "/test.txt"), requestFactory))
 				.isEqualTo("test");
-		verify(sslStoreProvider).getKeyStore();
-		verify(sslStoreProvider).getTrustStore();
+		verify(sslStoreProvider, atLeastOnce()).getKeyStore();
+		verify(sslStoreProvider, atLeastOnce()).getTrustStore();
 	}
 
 	@Test
@@ -711,7 +712,7 @@ public abstract class AbstractServletWebServerFactoryTests {
 	}
 
 	private String getStoreType(String keyStore) {
-		return (keyStore.endsWith(".p12") ? "pkcs12" : null);
+		return keyStore.endsWith(".p12") ? "pkcs12" : null;
 	}
 
 	@Test
@@ -802,6 +803,21 @@ public abstract class AbstractServletWebServerFactoryTests {
 	}
 
 	@Test
+	public void sslSessionTracking() {
+		AbstractServletWebServerFactory factory = getFactory();
+		Ssl ssl = new Ssl();
+		ssl.setEnabled(true);
+		ssl.setKeyStore("src/test/resources/test.jks");
+		ssl.setKeyPassword("password");
+		factory.setSsl(ssl);
+		factory.getSession().setTrackingModes(EnumSet.of(SessionTrackingMode.SSL));
+		AtomicReference<ServletContext> contextReference = new AtomicReference<>();
+		this.webServer = factory.getWebServer(contextReference::set);
+		assertThat(contextReference.get().getEffectiveSessionTrackingModes())
+				.isEqualTo(EnumSet.of(javax.servlet.SessionTrackingMode.SSL));
+	}
+
+	@Test
 	public void compressionOfResponseToGetRequest() throws Exception {
 		assertThat(doTestCompression(10000, null, null)).isTrue();
 	}
@@ -851,12 +867,9 @@ public abstract class AbstractServletWebServerFactoryTests {
 		AbstractServletWebServerFactory factory = getFactory();
 		this.webServer = factory.getWebServer();
 		Map<String, String> configuredMimeMappings = getActualMimeMappings();
-		Set<Entry<String, String>> entrySet = configuredMimeMappings.entrySet();
 		Collection<MimeMappings.Mapping> expectedMimeMappings = getExpectedMimeMappings();
-		for (Entry<String, String> entry : entrySet) {
-			assertThat(expectedMimeMappings)
-					.contains(new MimeMappings.Mapping(entry.getKey(), entry.getValue()));
-		}
+		configuredMimeMappings.forEach((key, value) -> assertThat(expectedMimeMappings)
+				.contains(new MimeMappings.Mapping(key, value)));
 		for (MimeMappings.Mapping mapping : expectedMimeMappings) {
 			assertThat(configuredMimeMappings).containsEntry(mapping.getExtension(),
 					mapping.getMimeType());
@@ -923,7 +936,6 @@ public abstract class AbstractServletWebServerFactoryTests {
 		doWithBlockedPort((port) -> {
 			try {
 				AbstractServletWebServerFactory factory = getFactory();
-				factory.setPort(SocketUtils.findAvailableTcpPort(40000));
 				addConnector(port, factory);
 				AbstractServletWebServerFactoryTests.this.webServer = factory
 						.getWebServer();
@@ -967,7 +979,7 @@ public abstract class AbstractServletWebServerFactoryTests {
 		JspServlet jspServlet = getJspServlet();
 		EmbeddedServletOptions options = (EmbeddedServletOptions) ReflectionTestUtils
 				.getField(jspServlet, "options");
-		assertThat(options.getDevelopment()).isEqualTo(false);
+		assertThat(options.getDevelopment()).isFalse();
 	}
 
 	@Test
@@ -1026,6 +1038,17 @@ public abstract class AbstractServletWebServerFactoryTests {
 		assertThat(servletContext.getSessionCookieConfig().isHttpOnly()).isTrue();
 		assertThat(servletContext.getSessionCookieConfig().isSecure()).isTrue();
 		assertThat(servletContext.getSessionCookieConfig().getMaxAge()).isEqualTo(60);
+	}
+
+	@Test
+	public void servletContextListenerContextDestroyedIsCalledWhenContainerIsStopped()
+			throws Exception {
+		ServletContextListener listener = mock(ServletContextListener.class);
+		this.webServer = getFactory()
+				.getWebServer((servletContext) -> servletContext.addListener(listener));
+		this.webServer.start();
+		this.webServer.stop();
+		verify(listener).contextDestroyed(any(ServletContextEvent.class));
 	}
 
 	protected abstract void addConnector(int port,
@@ -1129,13 +1152,13 @@ public abstract class AbstractServletWebServerFactoryTests {
 
 	protected String getResponse(String url,
 			HttpComponentsClientHttpRequestFactory requestFactory, String... headers)
-					throws IOException, URISyntaxException {
+			throws IOException, URISyntaxException {
 		return getResponse(url, HttpMethod.GET, requestFactory, headers);
 	}
 
 	protected String getResponse(String url, HttpMethod method,
 			HttpComponentsClientHttpRequestFactory requestFactory, String... headers)
-					throws IOException, URISyntaxException {
+			throws IOException, URISyntaxException {
 		try (ClientHttpResponse response = getClientResponse(url, method, requestFactory,
 				headers)) {
 			return StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
@@ -1163,7 +1186,7 @@ public abstract class AbstractServletWebServerFactoryTests {
 
 	protected ClientHttpResponse getClientResponse(String url, HttpMethod method,
 			HttpComponentsClientHttpRequestFactory requestFactory, String... headers)
-					throws IOException, URISyntaxException {
+			throws IOException, URISyntaxException {
 		ClientHttpRequest request = requestFactory.createRequest(new URI(url), method);
 		request.getHeaders().add("Cookie", "JSESSIONID=" + "123");
 		for (String header : headers) {

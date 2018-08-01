@@ -28,7 +28,8 @@ import org.junit.Test;
 
 import org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.endpoint.jmx.JmxEndpointAutoConfiguration;
-import org.springframework.boot.actuate.autoconfigure.web.trace.HttpTraceAutoConfiguration;
+import org.springframework.boot.actuate.autoconfigure.health.HealthIndicatorAutoConfiguration;
+import org.springframework.boot.actuate.autoconfigure.trace.http.HttpTraceAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.jmx.JmxAutoConfiguration;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
@@ -47,6 +48,7 @@ public class JmxEndpointIntegrationTests {
 	private final WebApplicationContextRunner contextRunner = new WebApplicationContextRunner()
 			.withConfiguration(AutoConfigurations.of(JmxAutoConfiguration.class,
 					EndpointAutoConfiguration.class, JmxEndpointAutoConfiguration.class,
+					HealthIndicatorAutoConfiguration.class,
 					HttpTraceAutoConfiguration.class))
 			.withConfiguration(
 					AutoConfigurations.of(EndpointAutoConfigurationClasses.ALL));
@@ -64,7 +66,8 @@ public class JmxEndpointIntegrationTests {
 
 	@Test
 	public void jmxEndpointsCanBeExcluded() {
-		this.contextRunner.withPropertyValues("management.endpoints.jmx.exclude:*")
+		this.contextRunner
+				.withPropertyValues("management.endpoints.jmx.exposure.exclude:*")
 				.run((context) -> {
 					MBeanServer mBeanServer = context.getBean(MBeanServer.class);
 					checkEndpointMBeans(mBeanServer, new String[0],
@@ -77,7 +80,8 @@ public class JmxEndpointIntegrationTests {
 
 	@Test
 	public void singleJmxEndpointCanBeExposed() {
-		this.contextRunner.withPropertyValues("management.endpoints.jmx.expose=beans")
+		this.contextRunner
+				.withPropertyValues("management.endpoints.jmx.exposure.include=beans")
 				.run((context) -> {
 					MBeanServer mBeanServer = context.getBean(MBeanServer.class);
 					checkEndpointMBeans(mBeanServer, new String[] { "beans" },
@@ -103,7 +107,7 @@ public class JmxEndpointIntegrationTests {
 			getMBeanInfo(mBeanServer, objectName);
 			return true;
 		}
-		catch (InstanceNotFoundException e) {
+		catch (InstanceNotFoundException ex) {
 			return false;
 		}
 	}

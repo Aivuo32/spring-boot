@@ -24,7 +24,7 @@ import org.springframework.cache.Cache;
 /**
  * Provide a {@link MeterBinder} based on a {@link Cache}.
  *
- * @param <C> The cache type
+ * @param <C> the cache type
  * @author Stephane Nicoll
  * @since 2.0.0
  */
@@ -35,10 +35,9 @@ public interface CacheMeterBinderProvider<C extends Cache> {
 	 * Return the {@link MeterBinder} managing the specified {@link Cache} or {@code null}
 	 * if the specified {@link Cache} is not supported.
 	 * @param cache the cache to instrument
-	 * @param name the name prefix of the metrics
 	 * @param tags tags to apply to all recorded metrics
 	 * @return a {@link MeterBinder} handling the specified {@link Cache} or {@code null}
 	 */
-	MeterBinder getMeterBinder(C cache, String name, Iterable<Tag> tags);
+	MeterBinder getMeterBinder(C cache, Iterable<Tag> tags);
 
 }

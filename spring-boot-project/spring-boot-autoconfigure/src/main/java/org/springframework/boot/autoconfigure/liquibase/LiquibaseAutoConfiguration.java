@@ -39,6 +39,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.data.jpa.EntityManagerFactoryDependsOnPostProcessor;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
+import org.springframework.boot.autoconfigure.jdbc.JdbcOperationsDependsOnPostProcessor;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
@@ -47,6 +48,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.orm.jpa.AbstractEntityManagerFactoryBean;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.util.Assert;
@@ -80,7 +82,8 @@ public class LiquibaseAutoConfiguration {
 
 	@Configuration
 	@ConditionalOnMissingBean(SpringLiquibase.class)
-	@EnableConfigurationProperties(LiquibaseProperties.class)
+	@EnableConfigurationProperties({ DataSourceProperties.class,
+			LiquibaseProperties.class })
 	@Import(LiquibaseJpaDependencyConfiguration.class)
 	public static class LiquibaseConfiguration {
 
@@ -123,11 +126,18 @@ public class LiquibaseAutoConfiguration {
 			liquibase.setChangeLog(this.properties.getChangeLog());
 			liquibase.setContexts(this.properties.getContexts());
 			liquibase.setDefaultSchema(this.properties.getDefaultSchema());
+			liquibase.setLiquibaseSchema(this.properties.getLiquibaseSchema());
+			liquibase.setLiquibaseTablespace(this.properties.getLiquibaseTablespace());
+			liquibase.setDatabaseChangeLogTable(
+					this.properties.getDatabaseChangeLogTable());
+			liquibase.setDatabaseChangeLogLockTable(
+					this.properties.getDatabaseChangeLogLockTable());
 			liquibase.setDropFirst(this.properties.isDropFirst());
 			liquibase.setShouldRun(this.properties.isEnabled());
 			liquibase.setLabels(this.properties.getLabels());
 			liquibase.setChangeLogParameters(this.properties.getParameters());
 			liquibase.setRollbackFile(this.properties.getRollbackFile());
+			liquibase.setTestRollbackOnUpdate(this.properties.isTestRollbackOnUpdate());
 			return liquibase;
 		}
 
@@ -167,14 +177,14 @@ public class LiquibaseAutoConfiguration {
 		private String getProperty(Supplier<String> property,
 				Supplier<String> defaultValue) {
 			String value = property.get();
-			return value == null ? defaultValue.get() : value;
+			return (value != null) ? value : defaultValue.get();
 		}
 
 	}
 
 	/**
-	 * Additional configuration to ensure that {@link EntityManagerFactory} beans
-	 * depend-on the liquibase bean.
+	 * Additional configuration to ensure that {@link EntityManagerFactory} beans depend
+	 * on the liquibase bean.
 	 */
 	@Configuration
 	@ConditionalOnClass(LocalContainerEntityManagerFactoryBean.class)
@@ -183,6 +193,22 @@ public class LiquibaseAutoConfiguration {
 			extends EntityManagerFactoryDependsOnPostProcessor {
 
 		public LiquibaseJpaDependencyConfiguration() {
+			super("liquibase");
+		}
+
+	}
+
+	/**
+	 * Additional configuration to ensure that {@link JdbcOperations} beans depend on the
+	 * liquibase bean.
+	 */
+	@Configuration
+	@ConditionalOnClass(JdbcOperations.class)
+	@ConditionalOnBean(JdbcOperations.class)
+	protected static class LiquibaseJdbcOperationsDependencyConfiguration
+			extends JdbcOperationsDependsOnPostProcessor {
+
+		public LiquibaseJdbcOperationsDependencyConfiguration() {
 			super("liquibase");
 		}
 

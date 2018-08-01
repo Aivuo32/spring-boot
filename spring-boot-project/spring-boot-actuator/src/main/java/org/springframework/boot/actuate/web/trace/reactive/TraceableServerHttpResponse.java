@@ -20,7 +20,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.boot.actuate.web.trace.TraceableResponse;
+import org.springframework.boot.actuate.trace.http.TraceableResponse;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 
 /**
@@ -38,8 +38,8 @@ class TraceableServerHttpResponse implements TraceableResponse {
 
 	@Override
 	public int getStatus() {
-		return this.response.getStatusCode() == null ? 200
-				: this.response.getStatusCode().value();
+		return (this.response.getStatusCode() != null)
+				? this.response.getStatusCode().value() : 200;
 	}
 
 	@Override

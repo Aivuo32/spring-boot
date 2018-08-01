@@ -34,7 +34,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
@@ -77,6 +76,7 @@ import static org.hamcrest.Matchers.not;
  * @author Andy Wilkinson
  * @author Stephane Nicoll
  * @author Ben Hale
+ * @author Fahim Farook
  */
 @RunWith(ModifiedClassPathRunner.class)
 @ClassPathExclusions("log4j*.jar")
@@ -86,9 +86,6 @@ public class LoggingApplicationListenerTests {
 
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();
-
-	@Rule
-	public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
 	@Rule
 	public OutputCapture outputCapture = new OutputCapture();
@@ -219,8 +216,10 @@ public class LoggingApplicationListenerTests {
 		this.initializer.initialize(this.context.getEnvironment(),
 				this.context.getClassLoader());
 		Log logger = LogFactory.getLog(LoggingApplicationListenerTests.class);
+		String existingOutput = this.outputCapture.toString();
 		logger.info("Hello world");
-		String output = this.outputCapture.toString().trim();
+		String output = this.outputCapture.toString().substring(existingOutput.length())
+				.trim();
 		assertThat(output).startsWith("target/foo.log");
 	}
 
@@ -244,8 +243,10 @@ public class LoggingApplicationListenerTests {
 		this.initializer.initialize(this.context.getEnvironment(),
 				this.context.getClassLoader());
 		Log logger = LogFactory.getLog(LoggingApplicationListenerTests.class);
+		String existingOutput = this.outputCapture.toString();
 		logger.info("Hello world");
-		String output = this.outputCapture.toString().trim();
+		String output = this.outputCapture.toString().substring(existingOutput.length())
+				.trim();
 		assertThat(output).startsWith("target/foo/spring.log");
 	}
 
@@ -501,11 +502,22 @@ public class LoggingApplicationListenerTests {
 	public void environmentPropertiesIgnoreUnresolvablePlaceholders() {
 		// gh-7719
 		TestPropertySourceUtils.addInlinedPropertiesToEnvironment(this.context,
+				"logging.pattern.console=console ${doesnotexist}");
+		this.initializer.initialize(this.context.getEnvironment(),
+				this.context.getClassLoader());
+		assertThat(System.getProperty(LoggingSystemProperties.CONSOLE_LOG_PATTERN))
+				.isEqualTo("console ${doesnotexist}");
+	}
+
+	@Test
+	public void environmentPropertiesResolvePlaceholders() {
+		TestPropertySourceUtils.addInlinedPropertiesToEnvironment(this.context,
 				"logging.pattern.console=console ${pid}");
 		this.initializer.initialize(this.context.getEnvironment(),
 				this.context.getClassLoader());
 		assertThat(System.getProperty(LoggingSystemProperties.CONSOLE_LOG_PATTERN))
-				.isEqualTo("console ${pid}");
+				.isEqualTo(this.context.getEnvironment()
+						.getProperty("logging.pattern.console"));
 	}
 
 	@Test

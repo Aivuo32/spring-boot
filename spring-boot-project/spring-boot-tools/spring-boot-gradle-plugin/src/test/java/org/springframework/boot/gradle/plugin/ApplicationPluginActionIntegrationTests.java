@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,6 +74,14 @@ public class ApplicationPluginActionIntegrationTests {
 	}
 
 	@Test
+	public void createsBootStartScriptsTaskUsesApplicationPluginsDefaultJvmOpts() {
+		assertThat(this.gradleBuild
+				.build("startScriptsDefaultJvmOpts", "-PapplyApplicationPlugin")
+				.getOutput()).contains(
+						"bootStartScripts defaultJvmOpts = [-Dcom.example.a=alpha, -Dcom.example.b=bravo]");
+	}
+
+	@Test
 	public void zipDistributionForJarCanBeBuilt() throws IOException {
 		assertThat(
 				this.gradleBuild.build("bootDistZip").task(":bootDistZip").getOutcome())
@@ -131,6 +139,21 @@ public class ApplicationPluginActionIntegrationTests {
 				name + "-boot/lib/", name + "-boot/lib/" + name + ".war",
 				name + "-boot/bin/", name + "-boot/bin/" + name,
 				name + "-boot/bin/" + name + ".bat");
+	}
+
+	@Test
+	public void applicationNameCanBeUsedToCustomizeDistributionName() throws IOException {
+		assertThat(
+				this.gradleBuild.build("bootDistTar").task(":bootDistTar").getOutcome())
+						.isEqualTo(TaskOutcome.SUCCESS);
+		File distribution = new File(this.gradleBuild.getProjectDir(),
+				"build/distributions/custom-boot.tar");
+		assertThat(distribution).isFile();
+		String name = this.gradleBuild.getProjectDir().getName();
+		assertThat(tarEntryNames(distribution)).containsExactlyInAnyOrder("custom-boot/",
+				"custom-boot/lib/", "custom-boot/lib/" + name + ".jar",
+				"custom-boot/bin/", "custom-boot/bin/custom",
+				"custom-boot/bin/custom.bat");
 	}
 
 	private List<String> zipEntryNames(File distribution) throws IOException {

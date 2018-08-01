@@ -23,28 +23,26 @@ import com.hazelcast.spring.cache.HazelcastCache;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.core.instrument.binder.cache.HazelcastCacheMetrics;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 /**
  * Tests for {@link HazelcastCacheMeterBinderProvider}.
  *
  * @author Stephane Nicoll
  */
-@RunWith(MockitoJUnitRunner.class)
 public class HazelcastCacheMeterBinderProviderTests {
 
-	@Mock
-	private IMap<Object, Object> nativeCache;
-
+	@SuppressWarnings("unchecked")
 	@Test
 	public void hazelcastCacheProvider() {
-		HazelcastCache cache = new HazelcastCache(this.nativeCache);
+		IMap<Object, Object> nativeCache = mock(IMap.class);
+		given(nativeCache.getName()).willReturn("test");
+		HazelcastCache cache = new HazelcastCache(nativeCache);
 		MeterBinder meterBinder = new HazelcastCacheMeterBinderProvider()
-				.getMeterBinder(cache, "test", Collections.emptyList());
+				.getMeterBinder(cache, Collections.emptyList());
 		assertThat(meterBinder).isInstanceOf(HazelcastCacheMetrics.class);
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,20 +76,6 @@ public class ServerPropertiesTests {
 		bind("server.connection-timeout", "60s");
 		assertThat(this.properties.getConnectionTimeout())
 				.isEqualTo(Duration.ofMillis(60000));
-	}
-
-	@Test
-	public void testServletPathAsMapping() {
-		bind("server.servlet.path", "/foo/*");
-		assertThat(this.properties.getServlet().getServletMapping()).isEqualTo("/foo/*");
-		assertThat(this.properties.getServlet().getServletPrefix()).isEqualTo("/foo");
-	}
-
-	@Test
-	public void testServletPathAsPrefix() {
-		bind("server.servlet.path", "/foo");
-		assertThat(this.properties.getServlet().getServletMapping()).isEqualTo("/foo/*");
-		assertThat(this.properties.getServlet().getServletPrefix()).isEqualTo("/foo");
 	}
 
 	@Test
@@ -175,11 +161,11 @@ public class ServerPropertiesTests {
 		map.put("server.jetty.accesslog.append", "true");
 		bind(map);
 		ServerProperties.Jetty jetty = this.properties.getJetty();
-		assertThat(jetty.getAccesslog().isEnabled()).isEqualTo(true);
+		assertThat(jetty.getAccesslog().isEnabled()).isTrue();
 		assertThat(jetty.getAccesslog().getFilename()).isEqualTo("foo.txt");
 		assertThat(jetty.getAccesslog().getFileDateFormat()).isEqualTo("yyyymmdd");
 		assertThat(jetty.getAccesslog().getRetentionPeriod()).isEqualTo(4);
-		assertThat(jetty.getAccesslog().isAppend()).isEqualTo(true);
+		assertThat(jetty.getAccesslog().isAppend()).isTrue();
 	}
 
 	private void bind(String name, String value) {

@@ -23,6 +23,8 @@ import java.util.function.Function;
 
 import org.junit.Test;
 
+import org.springframework.boot.actuate.endpoint.InvocationContext;
+import org.springframework.boot.actuate.endpoint.SecurityContext;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.invoke.convert.ConversionServiceParameterValueMapper;
@@ -56,11 +58,23 @@ public class CloudFoundryWebEndpointDiscovererTests {
 			assertThat(endpoints.size()).isEqualTo(2);
 			for (ExposableWebEndpoint endpoint : endpoints) {
 				if (endpoint.getId().equals("health")) {
-					WebOperation operation = endpoint.getOperations().iterator().next();
-					assertThat(operation.invoke(Collections.emptyMap())).isEqualTo("cf");
+					WebOperation operation = findMainReadOperation(endpoint);
+					assertThat(operation.invoke(new InvocationContext(
+							mock(SecurityContext.class), Collections.emptyMap())))
+									.isEqualTo("cf");
 				}
 			}
 		});
+	}
+
+	private WebOperation findMainReadOperation(ExposableWebEndpoint endpoint) {
+		for (WebOperation operation : endpoint.getOperations()) {
+			if (operation.getRequestPredicate().getPath().equals("health")) {
+				return operation;
+			}
+		}
+		throw new IllegalStateException(
+				"No main read operation found from " + endpoint.getOperations());
 	}
 
 	private void load(Class<?> configuration,

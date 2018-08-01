@@ -16,10 +16,19 @@
 
 package org.springframework.boot.actuate.endpoint.web.servlet;
 
+import java.io.IOException;
 import java.util.Arrays;
+
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.junit.Test;
 
+import org.springframework.boot.actuate.endpoint.web.EndpointLinksResolver;
+import org.springframework.boot.actuate.endpoint.web.EndpointMapping;
 import org.springframework.boot.actuate.endpoint.web.EndpointMediaTypes;
 import org.springframework.boot.actuate.endpoint.web.annotation.AbstractWebEndpointIntegrationTests;
 import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpointDiscoverer;
@@ -30,7 +39,6 @@ import org.springframework.boot.autoconfigure.web.servlet.DispatcherServletAutoC
 import org.springframework.boot.autoconfigure.web.servlet.ServletWebServerFactoryAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.servlet.error.ErrorMvcAutoConfiguration;
-import org.springframework.boot.endpoint.web.EndpointMapping;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -38,7 +46,13 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestWrapper;
 import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -52,20 +66,30 @@ public class MvcWebEndpointIntegrationTests extends
 		AbstractWebEndpointIntegrationTests<AnnotationConfigServletWebServerApplicationContext> {
 
 	public MvcWebEndpointIntegrationTests() {
-		super(WebMvcConfiguration.class);
+		super(MvcWebEndpointIntegrationTests::createApplicationContext,
+				MvcWebEndpointIntegrationTests::applyAuthenticatedConfiguration);
+	}
+
+	private static AnnotationConfigServletWebServerApplicationContext createApplicationContext() {
+		AnnotationConfigServletWebServerApplicationContext context = new AnnotationConfigServletWebServerApplicationContext();
+		context.register(WebMvcConfiguration.class);
+		return context;
+	}
+
+	private static void applyAuthenticatedConfiguration(
+			AnnotationConfigServletWebServerApplicationContext context) {
+		context.register(AuthenticatedConfiguration.class);
 	}
 
 	@Test
 	public void responseToOptionsRequestIncludesCorsHeaders() {
-		load(TestEndpointConfiguration.class,
-				(client) -> client.options().uri("/test")
-						.accept(MediaType.APPLICATION_JSON)
-						.header("Access-Control-Request-Method", "POST")
-						.header("Origin", "http://example.com").exchange().expectStatus()
-						.isOk().expectHeader()
-						.valueEquals("Access-Control-Allow-Origin", "http://example.com")
-						.expectHeader()
-						.valueEquals("Access-Control-Allow-Methods", "GET,POST"));
+		load(TestEndpointConfiguration.class, (client) -> client.options().uri("/test")
+				.accept(MediaType.APPLICATION_JSON)
+				.header("Access-Control-Request-Method", "POST")
+				.header("Origin", "http://example.com").exchange().expectStatus().isOk()
+				.expectHeader()
+				.valueEquals("Access-Control-Allow-Origin", "http://example.com")
+				.expectHeader().valueEquals("Access-Control-Allow-Methods", "GET,POST"));
 	}
 
 	@Test
@@ -78,14 +102,6 @@ public class MvcWebEndpointIntegrationTests extends
 					.returnResult(byte[].class).getResponseBodyContent();
 			assertThat(responseBody).containsExactly(0, 1, 2, 3);
 		});
-	}
-
-	@Override
-	protected AnnotationConfigServletWebServerApplicationContext createApplicationContext(
-			Class<?>... config) {
-		AnnotationConfigServletWebServerApplicationContext context = new AnnotationConfigServletWebServerApplicationContext();
-		context.register(config);
-		return context;
 	}
 
 	@Override
@@ -115,7 +131,38 @@ public class MvcWebEndpointIntegrationTests extends
 			return new WebMvcEndpointHandlerMapping(
 					new EndpointMapping(environment.getProperty("endpointPath")),
 					endpointDiscoverer.getEndpoints(), endpointMediaTypes,
-					corsConfiguration);
+					corsConfiguration,
+					new EndpointLinksResolver(endpointDiscoverer.getEndpoints()));
+		}
+
+	}
+
+	@Configuration
+	static class AuthenticatedConfiguration {
+
+		@Bean
+		public Filter securityFilter() {
+			return new OncePerRequestFilter() {
+
+				@Override
+				protected void doFilterInternal(HttpServletRequest request,
+						HttpServletResponse response, FilterChain filterChain)
+						throws ServletException, IOException {
+					SecurityContext context = SecurityContextHolder.createEmptyContext();
+					context.setAuthentication(new UsernamePasswordAuthenticationToken(
+							"Alice", "secret",
+							Arrays.asList(new SimpleGrantedAuthority("ROLE_ACTUATOR"))));
+					SecurityContextHolder.setContext(context);
+					try {
+						filterChain.doFilter(new SecurityContextHolderAwareRequestWrapper(
+								request, "ROLE_"), response);
+					}
+					finally {
+						SecurityContextHolder.clearContext();
+					}
+				}
+
+			};
 		}
 
 	}

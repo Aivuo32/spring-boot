@@ -31,11 +31,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.springframework.boot.context.properties.bind.convert.Delimiter;
 import org.springframework.boot.context.properties.bind.handler.IgnoreErrorsBindHandler;
 import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
 import org.springframework.boot.context.properties.source.ConfigurationPropertySource;
 import org.springframework.boot.context.properties.source.MockConfigurationPropertySource;
+import org.springframework.boot.convert.Delimiter;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -212,12 +212,12 @@ public class JavaBeanBinderTests {
 	}
 
 	@Test
-	public void bindToClassShouldBindToCollectionWithDelimeter() {
+	public void bindToClassShouldBindToCollectionWithDelimiter() {
 		MockConfigurationPropertySource source = new MockConfigurationPropertySource();
 		source.put("foo.collection", "foo-bar|bar-baz");
 		this.sources.add(source);
-		ExampleCollectionBeanWithDelimeter bean = this.binder
-				.bind("foo", Bindable.of(ExampleCollectionBeanWithDelimeter.class)).get();
+		ExampleCollectionBeanWithDelimiter bean = this.binder
+				.bind("foo", Bindable.of(ExampleCollectionBeanWithDelimiter.class)).get();
 		assertThat(bean.getCollection()).containsExactly(ExampleEnum.FOO_BAR,
 				ExampleEnum.BAR_BAZ);
 	}
@@ -465,6 +465,39 @@ public class JavaBeanBinderTests {
 		assertThat(bean.getDate().toString()).isEqualTo("2014-04-01");
 	}
 
+	@Test
+	public void bindWhenValueIsConvertedWithPropertyEditorShouldBind() {
+		// gh-12166
+		MockConfigurationPropertySource source = new MockConfigurationPropertySource();
+		source.put("foo.value", "java.lang.RuntimeException");
+		this.sources.add(source);
+		ExampleWithPropertyEditorType bean = this.binder
+				.bind("foo", Bindable.of(ExampleWithPropertyEditorType.class)).get();
+		assertThat(bean.getValue()).isEqualTo(RuntimeException.class);
+	}
+
+	@Test
+	public void bindToClassShouldIgnoreInvalidAccessors() {
+		MockConfigurationPropertySource source = new MockConfigurationPropertySource();
+		source.put("foo.name", "something");
+		this.sources.add(source);
+		ExampleWithInvalidAccessors bean = this.binder
+				.bind("foo", Bindable.of(ExampleWithInvalidAccessors.class)).get();
+		assertThat(bean.getName()).isEqualTo("something");
+	}
+
+	@Test
+	public void bindToClassShouldIgnoreStaticAccessors() {
+		MockConfigurationPropertySource source = new MockConfigurationPropertySource();
+		source.put("foo.name", "invalid");
+		source.put("foo.counter", "42");
+		this.sources.add(source);
+		ExampleWithStaticAccessors bean = this.binder
+				.bind("foo", Bindable.of(ExampleWithStaticAccessors.class)).get();
+		assertThat(ExampleWithStaticAccessors.name).isNull();
+		assertThat(bean.getCounter()).isEqualTo(42);
+	}
+
 	public static class ExampleValueBean {
 
 		private int intValue;
@@ -629,7 +662,7 @@ public class JavaBeanBinderTests {
 
 	}
 
-	public static class ExampleCollectionBeanWithDelimeter {
+	public static class ExampleCollectionBeanWithDelimiter {
 
 		@Delimiter("|")
 		private Collection<ExampleEnum> collection;
@@ -802,6 +835,52 @@ public class JavaBeanBinderTests {
 
 	}
 
+	public static class ExampleWithInvalidAccessors {
+
+		private String name;
+
+		public String getName() {
+			return this.name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public String get() {
+			throw new IllegalArgumentException("should not be invoked");
+		}
+
+		public boolean is() {
+			throw new IllegalArgumentException("should not be invoked");
+		}
+
+	}
+
+	public static class ExampleWithStaticAccessors {
+
+		private static String name;
+
+		private int counter;
+
+		public static String getName() {
+			return name;
+		}
+
+		public static void setName(String name) {
+			ExampleWithStaticAccessors.name = name;
+		}
+
+		public int getCounter() {
+			return this.counter;
+		}
+
+		public void setCounter(int counter) {
+			this.counter = counter;
+		}
+
+	}
+
 	public enum ExampleEnum {
 
 		FOO_BAR,
@@ -821,6 +900,20 @@ public class JavaBeanBinderTests {
 
 		public void setDate(LocalDate date) {
 			this.date = date;
+		}
+
+	}
+
+	public static class ExampleWithPropertyEditorType {
+
+		private Class<? extends Throwable> value;
+
+		public Class<? extends Throwable> getValue() {
+			return this.value;
+		}
+
+		public void setValue(Class<? extends Throwable> value) {
+			this.value = value;
 		}
 
 	}

@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -32,10 +33,10 @@ import org.springframework.core.env.Environment;
 import org.springframework.util.Assert;
 
 /**
- * {@link EndpointFilter} that will filter endpoints based on {@code expose} and
+ * {@link EndpointFilter} that will filter endpoints based on {@code include} and
  * {@code exclude} properties.
  *
- * @param <E> The endpoint type
+ * @param <E> the endpoint type
  * @author Phillip Webb
  * @since 2.0.0
  */
@@ -44,7 +45,7 @@ public class ExposeExcludePropertyEndpointFilter<E extends ExposableEndpoint<?>>
 
 	private final Class<E> endpointType;
 
-	private final Set<String> expose;
+	private final Set<String> include;
 
 	private final Set<String> exclude;
 
@@ -57,17 +58,17 @@ public class ExposeExcludePropertyEndpointFilter<E extends ExposableEndpoint<?>>
 		Assert.hasText(prefix, "Prefix must not be empty");
 		Binder binder = Binder.get(environment);
 		this.endpointType = endpointType;
-		this.expose = bind(binder, prefix + ".expose");
+		this.include = bind(binder, prefix + ".include");
 		this.exclude = bind(binder, prefix + ".exclude");
 		this.exposeDefaults = asSet(Arrays.asList(exposeDefaults));
 	}
 
 	public ExposeExcludePropertyEndpointFilter(Class<E> endpointType,
-			Collection<String> expose, Collection<String> exclude,
+			Collection<String> include, Collection<String> exclude,
 			String... exposeDefaults) {
 		Assert.notNull(endpointType, "EndpointType Type must not be null");
 		this.endpointType = endpointType;
-		this.expose = asSet(expose);
+		this.include = asSet(include);
 		this.exclude = asSet(exclude);
 		this.exposeDefaults = asSet(Arrays.asList(exposeDefaults));
 	}
@@ -81,7 +82,7 @@ public class ExposeExcludePropertyEndpointFilter<E extends ExposableEndpoint<?>>
 		if (items == null) {
 			return Collections.emptySet();
 		}
-		return items.stream().map(String::toLowerCase)
+		return items.stream().map((item) -> item.toLowerCase(Locale.ENGLISH))
 				.collect(Collectors.toCollection(HashSet::new));
 	}
 
@@ -94,11 +95,11 @@ public class ExposeExcludePropertyEndpointFilter<E extends ExposableEndpoint<?>>
 	}
 
 	private boolean isExposed(ExposableEndpoint<?> endpoint) {
-		if (this.expose.isEmpty()) {
+		if (this.include.isEmpty()) {
 			return this.exposeDefaults.contains("*")
 					|| contains(this.exposeDefaults, endpoint);
 		}
-		return this.expose.contains("*") || contains(this.expose, endpoint);
+		return this.include.contains("*") || contains(this.include, endpoint);
 	}
 
 	private boolean isExcluded(ExposableEndpoint<?> endpoint) {
@@ -109,7 +110,7 @@ public class ExposeExcludePropertyEndpointFilter<E extends ExposableEndpoint<?>>
 	}
 
 	private boolean contains(Set<String> items, ExposableEndpoint<?> endpoint) {
-		return items.contains(endpoint.getId().toLowerCase());
+		return items.contains(endpoint.getId().toLowerCase(Locale.ENGLISH));
 	}
 
 }

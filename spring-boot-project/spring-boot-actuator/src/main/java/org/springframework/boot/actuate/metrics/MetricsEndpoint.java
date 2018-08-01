@@ -91,15 +91,22 @@ public class MetricsEndpoint {
 		Map<Statistic, Double> samples = getSamples(meters);
 		Map<String, Set<String>> availableTags = getAvailableTags(meters);
 		tags.forEach((t) -> availableTags.remove(t.getKey()));
-		return new MetricResponse(requiredMetricName, asList(samples, Sample::new),
+		Meter.Id meterId = meters.get(0).getId();
+		return new MetricResponse(requiredMetricName, meterId.getDescription(),
+				meterId.getBaseUnit(), asList(samples, Sample::new),
 				asList(availableTags, AvailableTag::new));
 	}
 
 	private List<Tag> parseTags(List<String> tags) {
-		return tags == null ? Collections.emptyList() : tags.stream().map((t) -> {
-			String[] tagParts = t.split(":", 2);
-			return Tag.of(tagParts[0], tagParts[1]);
-		}).collect(Collectors.toList());
+		if (tags == null) {
+			return Collections.emptyList();
+		}
+		return tags.stream().map(this::parseTag).collect(Collectors.toList());
+	}
+
+	private Tag parseTag(String tag) {
+		String[] parts = tag.split(":", 2);
+		return Tag.of(parts[0], parts[1]);
 	}
 
 	private void collectMeters(List<Meter> meters, MeterRegistry registry, String name,
@@ -120,10 +127,8 @@ public class MetricsEndpoint {
 	}
 
 	private void mergeMeasurements(Map<Statistic, Double> samples, Meter meter) {
-		meter.measure()
-				.forEach((measurement) -> samples.merge(measurement.getStatistic(),
-						measurement.getValue(),
-						mergeFunction(measurement.getStatistic())));
+		meter.measure().forEach((measurement) -> samples.merge(measurement.getStatistic(),
+				measurement.getValue(), mergeFunction(measurement.getStatistic())));
 	}
 
 	private BiFunction<Double, Double, Double> mergeFunction(Statistic statistic) {
@@ -170,6 +175,7 @@ public class MetricsEndpoint {
 		public Set<String> getNames() {
 			return this.names;
 		}
+
 	}
 
 	/**
@@ -179,19 +185,33 @@ public class MetricsEndpoint {
 
 		private final String name;
 
+		private final String description;
+
+		private final String baseUnit;
+
 		private final List<Sample> measurements;
 
 		private final List<AvailableTag> availableTags;
 
-		MetricResponse(String name, List<Sample> measurements,
-				List<AvailableTag> availableTags) {
+		MetricResponse(String name, String description, String baseUnit,
+				List<Sample> measurements, List<AvailableTag> availableTags) {
 			this.name = name;
+			this.description = description;
+			this.baseUnit = baseUnit;
 			this.measurements = measurements;
 			this.availableTags = availableTags;
 		}
 
 		public String getName() {
 			return this.name;
+		}
+
+		public String getDescription() {
+			return this.description;
+		}
+
+		public String getBaseUnit() {
+			return this.baseUnit;
 		}
 
 		public List<Sample> getMeasurements() {
@@ -225,6 +245,7 @@ public class MetricsEndpoint {
 		public Set<String> getValues() {
 			return this.values;
 		}
+
 	}
 
 	/**

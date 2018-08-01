@@ -64,8 +64,7 @@ public class MessageSourceAutoConfiguration {
 	}
 
 	@Bean
-	public MessageSource messageSource() {
-		MessageSourceProperties properties = messageSourceProperties();
+	public MessageSource messageSource(MessageSourceProperties properties) {
 		ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
 		if (StringUtils.hasText(properties.getBasename())) {
 			messageSource.setBasenames(StringUtils.commaDelimitedListToStringArray(
@@ -76,8 +75,9 @@ public class MessageSourceAutoConfiguration {
 		}
 		messageSource.setFallbackToSystemLocale(properties.isFallbackToSystemLocale());
 		Duration cacheDuration = properties.getCacheDuration();
-		messageSource.setCacheSeconds(
-				cacheDuration == null ? -1 : (int) cacheDuration.getSeconds());
+		if (cacheDuration != null) {
+			messageSource.setCacheMillis(cacheDuration.toMillis());
+		}
 		messageSource.setAlwaysUseMessageFormat(properties.isAlwaysUseMessageFormat());
 		messageSource.setUseCodeAsDefaultMessage(properties.isUseCodeAsDefaultMessage());
 		return messageSource;

@@ -69,14 +69,14 @@ public class SampleActuatorApplicationTests {
 	@Test
 	public void testMetricsIsSecure() {
 		@SuppressWarnings("rawtypes")
-		ResponseEntity<Map> entity = this.restTemplate.getForEntity("/metrics",
+		ResponseEntity<Map> entity = this.restTemplate.getForEntity("/actuator/metrics",
 				Map.class);
 		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-		entity = this.restTemplate.getForEntity("/metrics/", Map.class);
+		entity = this.restTemplate.getForEntity("/actuator/metrics/", Map.class);
 		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-		entity = this.restTemplate.getForEntity("/metrics/foo", Map.class);
+		entity = this.restTemplate.getForEntity("/actuator/metrics/foo", Map.class);
 		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-		entity = this.restTemplate.getForEntity("/metrics.json", Map.class);
+		entity = this.restTemplate.getForEntity("/actuator/metrics.json", Map.class);
 		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
 	}
 
@@ -119,20 +119,18 @@ public class SampleActuatorApplicationTests {
 	}
 
 	@Test
-	public void testHealth() {
-		ResponseEntity<String> entity = this.restTemplate
-				.withBasicAuth("user", getPassword())
-				.getForEntity("/actuator/health", String.class);
+	public void healthInsecureByDefault() {
+		ResponseEntity<String> entity = this.restTemplate.getForEntity("/actuator/health",
+				String.class);
 		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
 		assertThat(entity.getBody()).contains("\"status\":\"UP\"");
 		assertThat(entity.getBody()).doesNotContain("\"hello\":\"1\"");
 	}
 
 	@Test
-	public void testInfo() {
-		ResponseEntity<String> entity = this.restTemplate
-				.withBasicAuth("user", getPassword())
-				.getForEntity("/actuator/info", String.class);
+	public void infoInsecureByDefault() {
+		ResponseEntity<String> entity = this.restTemplate.getForEntity("/actuator/info",
+				String.class);
 		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
 		assertThat(entity.getBody())
 				.contains("\"artifact\":\"spring-boot-sample-actuator\"");

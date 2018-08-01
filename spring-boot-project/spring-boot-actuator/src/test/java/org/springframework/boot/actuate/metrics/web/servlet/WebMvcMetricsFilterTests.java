@@ -189,6 +189,18 @@ public class WebMvcMetricsFilterTests {
 	}
 
 	@Test
+	public void anonymousError() {
+		try {
+			this.mvc.perform(get("/api/c1/anonymousError/10"));
+		}
+		catch (Throwable ignore) {
+		}
+		assertThat(this.registry.get("http.server.requests")
+				.tag("uri", "/api/c1/anonymousError/{id}").timer().getId()
+				.getTag("exception")).endsWith("$1");
+	}
+
+	@Test
 	public void asyncCallableRequest() throws Exception {
 		AtomicReference<MvcResult> result = new AtomicReference<>();
 		Thread backgroundRequest = new Thread(() -> {
@@ -250,8 +262,8 @@ public class WebMvcMetricsFilterTests {
 				result.set(this.mvc.perform(get("/api/c1/completableFuture/{id}", 1))
 						.andExpect(request().asyncStarted()).andReturn());
 			}
-			catch (Exception e) {
-				fail("Failed to execute async request", e);
+			catch (Exception ex) {
+				fail("Failed to execute async request", ex);
 			}
 		});
 		backgroundRequest.start();
@@ -441,6 +453,14 @@ public class WebMvcMetricsFilterTests {
 		}
 
 		@Timed
+		@GetMapping("/anonymousError/{id}")
+		public String alwaysThrowsAnonymousException(@PathVariable Long id)
+				throws Exception {
+			throw new Exception("this exception won't have a simple class name") {
+			};
+		}
+
+		@Timed
 		@GetMapping("/unhandledError/{id}")
 		public String alwaysThrowsUnhandledException(@PathVariable Long id) {
 			throw new RuntimeException("Boom on " + id + "!");
@@ -497,7 +517,7 @@ public class WebMvcMetricsFilterTests {
 		@Override
 		protected void doFilterInternal(HttpServletRequest request,
 				HttpServletResponse response, FilterChain filterChain)
-						throws ServletException, IOException {
+				throws ServletException, IOException {
 			String misbehave = request.getHeader(TEST_MISBEHAVE_HEADER);
 			if (misbehave != null) {
 				response.setStatus(Integer.parseInt(misbehave));

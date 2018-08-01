@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.springframework.boot.autoconfigure.webservices;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
@@ -78,14 +77,12 @@ public class WebServicesAutoConfiguration {
 		MessageDispatcherServlet servlet = new MessageDispatcherServlet();
 		servlet.setApplicationContext(applicationContext);
 		String path = this.properties.getPath();
-		String urlMapping = (path.endsWith("/") ? path + "*" : path + "/*");
+		String urlMapping = path + (path.endsWith("/") ? "*" : "/*");
 		ServletRegistrationBean<MessageDispatcherServlet> registration = new ServletRegistrationBean<>(
 				servlet, urlMapping);
 		WebServicesProperties.Servlet servletProperties = this.properties.getServlet();
 		registration.setLoadOnStartup(servletProperties.getLoadOnStartup());
-		for (Map.Entry<String, String> entry : servletProperties.getInit().entrySet()) {
-			registration.addInitParameter(entry.getKey(), entry.getValue());
-		}
+		servletProperties.getInit().forEach(registration::addInitParameter);
 		return registration;
 	}
 
@@ -149,13 +146,13 @@ public class WebServicesAutoConfiguration {
 				return this.applicationContext
 						.getResources(ensureTrailingSlash(location) + pattern);
 			}
-			catch (IOException e) {
+			catch (IOException ex) {
 				return new Resource[0];
 			}
 		}
 
 		private String ensureTrailingSlash(String path) {
-			return (path.endsWith("/") ? path : path + "/");
+			return path.endsWith("/") ? path : path + "/";
 		}
 
 	}

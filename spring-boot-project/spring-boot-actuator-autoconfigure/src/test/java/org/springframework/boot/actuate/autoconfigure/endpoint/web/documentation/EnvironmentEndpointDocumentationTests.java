@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -71,12 +70,10 @@ public class EnvironmentEndpointDocumentationTests
 
 	@Test
 	public void env() throws Exception {
-		this.mockMvc.perform(get("/actuator/env")).andExpect(status().isOk())
-				.andDo(document("env/all",
-						preprocessResponse(replacePattern(
-								Pattern.compile(
-										"org/springframework/boot/actuate/autoconfigure/endpoint/web/documentation/"),
-								""), filterProperties()),
+		this.mockMvc.perform(get("/actuator/env")).andExpect(status().isOk()).andDo(
+				document("env/all", preprocessResponse(replacePattern(Pattern.compile(
+						"org/springframework/boot/actuate/autoconfigure/endpoint/web/documentation/"),
+						""), filterProperties()),
 						responseFields(activeProfiles, propertySources,
 								propertySourceName,
 								fieldWithPath("propertySources.[].properties")
@@ -94,14 +91,13 @@ public class EnvironmentEndpointDocumentationTests
 		this.mockMvc.perform(get("/actuator/env/com.example.cache.max-size"))
 				.andExpect(status().isOk())
 				.andDo(document("env/single",
-						preprocessResponse(replacePattern(
-								Pattern.compile(
-										"org/springframework/boot/actuate/autoconfigure/endpoint/web/documentation/"),
+						preprocessResponse(replacePattern(Pattern.compile(
+								"org/springframework/boot/actuate/autoconfigure/endpoint/web/documentation/"),
 								"")),
 						responseFields(
 								fieldWithPath("property").description(
 										"Property from the environment, if found.")
-								.optional(),
+										.optional(),
 								fieldWithPath("property.source").description(
 										"Name of the source of the property."),
 								fieldWithPath("property.value")
@@ -159,8 +155,7 @@ public class EnvironmentEndpointDocumentationTests
 				@Override
 				protected void customizePropertySources(
 						MutablePropertySources propertySources) {
-					StreamSupport
-							.stream(environment.getPropertySources().spliterator(), false)
+					environment.getPropertySources().stream()
 							.filter(this::includedPropertySource)
 							.forEach(propertySources::addLast);
 				}

@@ -135,11 +135,12 @@ public class JettyReactiveWebServerFactory extends AbstractReactiveWebServerFact
 	}
 
 	protected Server createJettyServer(JettyHttpHandlerAdapter servlet) {
-		int port = (getPort() >= 0 ? getPort() : 0);
+		int port = (getPort() >= 0) ? getPort() : 0;
 		InetSocketAddress address = new InetSocketAddress(getAddress(), port);
 		Server server = new Server(getThreadPool());
 		server.addConnector(createConnector(address, server));
 		ServletHolder servletHolder = new ServletHolder(servlet);
+		servletHolder.setAsyncSupported(true);
 		ServletContextHandler contextHandler = new ServletContextHandler(server, "",
 				false, false);
 		contextHandler.addServlet(servletHolder, "/");
@@ -147,7 +148,7 @@ public class JettyReactiveWebServerFactory extends AbstractReactiveWebServerFact
 		JettyReactiveWebServerFactory.logger
 				.info("Server initialized with port: " + port);
 		if (getSsl() != null && getSsl().isEnabled()) {
-			customizeSsl(server, port);
+			customizeSsl(server, address);
 		}
 		for (JettyServerCustomizer customizer : getServerCustomizers()) {
 			customizer.customize(server);
@@ -189,8 +190,8 @@ public class JettyReactiveWebServerFactory extends AbstractReactiveWebServerFact
 		return wrapper;
 	}
 
-	private void customizeSsl(Server server, int port) {
-		new SslServerCustomizer(port, getSsl(), getSslStoreProvider(), getHttp2())
+	private void customizeSsl(Server server, InetSocketAddress address) {
+		new SslServerCustomizer(address, getSsl(), getSslStoreProvider(), getHttp2())
 				.customize(server);
 	}
 

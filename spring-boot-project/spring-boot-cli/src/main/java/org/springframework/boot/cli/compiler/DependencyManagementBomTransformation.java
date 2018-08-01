@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -169,7 +169,7 @@ public class DependencyManagementBomTransformation
 	private void updateDependencyResolutionContext(
 			List<Map<String, String>> bomDependencies) {
 		URI[] uris = Grape.getInstance().resolve(null,
-				bomDependencies.toArray(new Map[bomDependencies.size()]));
+				bomDependencies.toArray(new Map[0]));
 		DefaultModelBuilder modelBuilder = new DefaultModelBuilderFactory().newInstance();
 		for (URI uri : uris) {
 			try {
@@ -222,8 +222,8 @@ public class DependencyManagementBomTransformation
 				return new UrlModelSource(
 						Grape.getInstance().resolve(null, dependency)[0].toURL());
 			}
-			catch (MalformedURLException e) {
-				throw new UnresolvableModelException(e.getMessage(), groupId, artifactId,
+			catch (MalformedURLException ex) {
+				throw new UnresolvableModelException(ex.getMessage(), groupId, artifactId,
 						version);
 			}
 		}

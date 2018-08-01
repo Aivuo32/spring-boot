@@ -44,6 +44,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.test.context.ContextConfigurationAttributes;
 import org.springframework.test.context.ContextCustomizer;
 import org.springframework.test.context.ContextLoader;
@@ -109,11 +110,11 @@ public class SpringBootContextLoader extends AbstractContextLoader {
 		if (!ObjectUtils.isEmpty(config.getActiveProfiles())) {
 			setActiveProfiles(environment, config.getActiveProfiles());
 		}
+		ResourceLoader resourceLoader = (application.getResourceLoader() != null)
+				? application.getResourceLoader()
+				: new DefaultResourceLoader(getClass().getClassLoader());
 		TestPropertySourceUtils.addPropertiesFilesToEnvironment(environment,
-				application.getResourceLoader() == null
-						? new DefaultResourceLoader(getClass().getClassLoader())
-						: application.getResourceLoader(),
-				config.getPropertySourceLocations());
+				resourceLoader, config.getPropertySourceLocations());
 		TestPropertySourceUtils.addInlinedPropertiesToEnvironment(environment,
 				getInlinedProperties(config));
 		application.setEnvironment(environment);
@@ -135,8 +136,7 @@ public class SpringBootContextLoader extends AbstractContextLoader {
 			application.setWebApplicationType(WebApplicationType.NONE);
 		}
 		application.setInitializers(initializers);
-		ConfigurableApplicationContext context = application.run();
-		return context;
+		return application.run();
 	}
 
 	/**
@@ -173,7 +173,7 @@ public class SpringBootContextLoader extends AbstractContextLoader {
 		if (!isEmbeddedWebEnvironment(config) && !hasCustomServerPort(properties)) {
 			properties.add("server.port=-1");
 		}
-		return properties.toArray(new String[properties.size()]);
+		return StringUtils.toStringArray(properties);
 	}
 
 	private void disableJmx(List<String> properties) {
@@ -187,9 +187,8 @@ public class SpringBootContextLoader extends AbstractContextLoader {
 
 	private ConfigurationPropertySource convertToConfigurationPropertySource(
 			List<String> properties) {
-		String[] array = properties.toArray(new String[properties.size()]);
-		return new MapConfigurationPropertySource(
-				TestPropertySourceUtils.convertInlinedPropertiesToMap(array));
+		return new MapConfigurationPropertySource(TestPropertySourceUtils
+				.convertInlinedPropertiesToMap(StringUtils.toStringArray(properties)));
 	}
 
 	/**

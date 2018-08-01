@@ -18,7 +18,7 @@ package org.springframework.boot.actuate.autoconfigure.metrics.export.datadog;
 
 import io.micrometer.datadog.DatadogConfig;
 
-import org.springframework.boot.actuate.autoconfigure.metrics.export.StepRegistryPropertiesConfigAdapter;
+import org.springframework.boot.actuate.autoconfigure.metrics.export.properties.StepRegistryPropertiesConfigAdapter;
 
 /**
  * Adapter to convert {@link DatadogProperties} to a {@link DatadogConfig}.
@@ -56,7 +56,7 @@ class DatadogPropertiesConfigAdapter extends
 
 	@Override
 	public boolean descriptions() {
-		return get(DatadogProperties::getDescriptions, DatadogConfig.super::descriptions);
+		return get(DatadogProperties::isDescriptions, DatadogConfig.super::descriptions);
 	}
 
 }

@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.http.MediaType;
+import org.springframework.util.Assert;
 import org.springframework.validation.DefaultMessageCodesResolver;
 
 /**
@@ -55,7 +56,7 @@ public class WebMvcProperties {
 	private LocaleResolver localeResolver = LocaleResolver.ACCEPT_HEADER;
 
 	/**
-	 * Date format to use. For instance, "dd/MM/yyyy".
+	 * Date format to use. For instance, `dd/MM/yyyy`.
 	 */
 	private String dateFormat;
 
@@ -98,9 +99,9 @@ public class WebMvcProperties {
 
 	private final View view = new View();
 
-	private final ContentNegotiation contentNegotiation = new ContentNegotiation();
+	private final Contentnegotiation contentnegotiation = new Contentnegotiation();
 
-	private final PathMatch pathMatch = new PathMatch();
+	private final Pathmatch pathmatch = new Pathmatch();
 
 	public DefaultMessageCodesResolver.Format getMessageCodesResolverFormat() {
 		return this.messageCodesResolverFormat;
@@ -196,12 +197,12 @@ public class WebMvcProperties {
 		return this.view;
 	}
 
-	public ContentNegotiation getContentNegotiation() {
-		return this.contentNegotiation;
+	public Contentnegotiation getContentnegotiation() {
+		return this.contentnegotiation;
 	}
 
-	public PathMatch getPathMatch() {
-		return this.pathMatch;
+	public Pathmatch getPathmatch() {
+		return this.pathmatch;
 	}
 
 	public static class Async {
@@ -226,9 +227,23 @@ public class WebMvcProperties {
 	public static class Servlet {
 
 		/**
+		 * Path of the dispatcher servlet.
+		 */
+		private String path = "/";
+
+		/**
 		 * Load on startup priority of the dispatcher servlet.
 		 */
 		private int loadOnStartup = -1;
+
+		public String getPath() {
+			return this.path;
+		}
+
+		public void setPath(String path) {
+			Assert.notNull(path, "Path must not be null");
+			this.path = path;
+		}
 
 		public int getLoadOnStartup() {
 			return this.loadOnStartup;
@@ -236,6 +251,39 @@ public class WebMvcProperties {
 
 		public void setLoadOnStartup(int loadOnStartup) {
 			this.loadOnStartup = loadOnStartup;
+		}
+
+		public String getServletMapping() {
+			if (this.path.equals("") || this.path.equals("/")) {
+				return "/";
+			}
+			if (this.path.contains("*")) {
+				return this.path;
+			}
+			if (this.path.endsWith("/")) {
+				return this.path + "*";
+			}
+			return this.path + "/*";
+		}
+
+		public String getPath(String path) {
+			String prefix = getServletPrefix();
+			if (!path.startsWith("/")) {
+				path = "/" + path;
+			}
+			return prefix + path;
+		}
+
+		public String getServletPrefix() {
+			String result = this.path;
+			int index = result.indexOf('*');
+			if (index != -1) {
+				result = result.substring(0, index);
+			}
+			if (result.endsWith("/")) {
+				result = result.substring(0, result.length() - 1);
+			}
+			return result;
 		}
 
 	}
@@ -270,7 +318,7 @@ public class WebMvcProperties {
 
 	}
 
-	public static class ContentNegotiation {
+	public static class Contentnegotiation {
 
 		/**
 		 * Whether the path extension in the URL path should be used to determine the
@@ -286,8 +334,8 @@ public class WebMvcProperties {
 		private boolean favorParameter = false;
 
 		/**
-		 * Maps file extensions to media types for content negotiation, e.g. yml to
-		 * text/yaml.
+		 * Map file extensions to media types for content negotiation. For instance, yml
+		 * to text/yaml.
 		 */
 		private Map<String, MediaType> mediaTypes = new LinkedHashMap<>();
 
@@ -330,7 +378,7 @@ public class WebMvcProperties {
 
 	}
 
-	public static class PathMatch {
+	public static class Pathmatch {
 
 		/**
 		 * Whether to use suffix pattern match (".*") when matching patterns to requests.
@@ -340,7 +388,7 @@ public class WebMvcProperties {
 
 		/**
 		 * Whether suffix pattern matching should work only against extensions registered
-		 * with "spring.mvc.content-negotiation.media-types.*". This is generally
+		 * with "spring.mvc.contentnegotiation.media-types.*". This is generally
 		 * recommended to reduce ambiguity and to avoid issues such as when a "." appears
 		 * in the path for other reasons.
 		 */

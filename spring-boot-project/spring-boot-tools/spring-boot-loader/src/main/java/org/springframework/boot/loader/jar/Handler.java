@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,7 +92,8 @@ public class Handler extends URLStreamHandler {
 
 	@Override
 	protected URLConnection openConnection(URL url) throws IOException {
-		if (this.jarFile != null) {
+		if (this.jarFile != null
+				&& url.toString().startsWith(this.jarFile.getUrl().toString())) {
 			return JarURLConnection.get(url, this.jarFile);
 		}
 		try {
@@ -123,8 +124,8 @@ public class Handler extends URLStreamHandler {
 
 	private void log(boolean warning, String message, Exception cause) {
 		try {
-			Logger.getLogger(getClass().getName())
-					.log((warning ? Level.WARNING : Level.FINEST), message, cause);
+			Level level = warning ? Level.WARNING : Level.FINEST;
+			Logger.getLogger(getClass().getName()).log(level, message, cause);
 		}
 		catch (Exception ex) {
 			if (warning) {
@@ -249,7 +250,7 @@ public class Handler extends URLStreamHandler {
 	}
 
 	private int hashCode(String protocol, String file) {
-		int result = (protocol == null ? 0 : protocol.hashCode());
+		int result = (protocol != null) ? protocol.hashCode() : 0;
 		int separatorIndex = file.indexOf(SEPARATOR);
 		if (separatorIndex == -1) {
 			return result + file.hashCode();
@@ -318,7 +319,7 @@ public class Handler extends URLStreamHandler {
 			String path = name.substring(FILE_PROTOCOL.length());
 			File file = new File(URLDecoder.decode(path, "UTF-8"));
 			Map<File, JarFile> cache = rootFileCache.get();
-			JarFile result = (cache == null ? null : cache.get(file));
+			JarFile result = (cache != null) ? cache.get(file) : null;
 			if (result == null) {
 				result = new JarFile(file);
 				addToRootFileCache(file, result);

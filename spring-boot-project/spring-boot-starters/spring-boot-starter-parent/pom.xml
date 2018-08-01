@@ -51,6 +51,7 @@
 					<version>${kotlin.version}</version>
 					<configuration>
 						<jvmTarget>${java.version}</jvmTarget>
+						<javaParameters>true</javaParameters>
 					</configuration>
 					<executions>
 						<execution>
@@ -87,6 +88,9 @@
 							</goals>
 						</execution>
 					</executions>
+					<configuration>
+						<classesDirectory>${project.build.outputDirectory}</classesDirectory>
+					</configuration>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
@@ -245,6 +249,25 @@
 										<ignore></ignore>
 									</action>
 								</pluginExecution>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>
+											org.apache.maven.plugins
+										</groupId>
+										<artifactId>
+											maven-checkstyle-plugin
+										</artifactId>
+										<versionRange>
+											[3.0.0,)
+										</versionRange>
+										<goals>
+											<goal>check</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore></ignore>
+									</action>
+								</pluginExecution>
 							</pluginExecutions>
 						</lifecycleMappingMetadata>
 					</configuration>
@@ -267,10 +290,13 @@
 						<configuration>
 							<updatePomFile>true</updatePomFile>
 							<pomElements>
-								<pluginManagement>keep</pluginManagement>
 								<parent>expand</parent>
-								<dependencyManagement>keep</dependencyManagement>
+								<name>keep</name>
+								<description>keep</description>
+								<url>expand</url>
 								<properties>keep</properties>
+								<pluginManagement>keep</pluginManagement>
+								<dependencyManagement>keep</dependencyManagement>
 								<build>keep</build>
 							</pomElements>
 						</configuration>

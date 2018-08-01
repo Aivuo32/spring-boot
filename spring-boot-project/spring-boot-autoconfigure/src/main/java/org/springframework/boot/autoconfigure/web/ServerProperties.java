@@ -22,7 +22,6 @@ import java.nio.charset.Charset;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -31,13 +30,12 @@ import java.util.TimeZone;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
-import org.springframework.boot.context.properties.bind.convert.DefaultDurationUnit;
+import org.springframework.boot.convert.DurationUnit;
 import org.springframework.boot.web.server.Compression;
 import org.springframework.boot.web.server.Http2;
 import org.springframework.boot.web.server.Ssl;
 import org.springframework.boot.web.servlet.server.Jsp;
 import org.springframework.boot.web.servlet.server.Session;
-import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
@@ -67,11 +65,6 @@ public class ServerProperties {
 	 * Network address to which the server should bind.
 	 */
 	private InetAddress address;
-
-	/**
-	 * Display name of the application.
-	 */
-	private String displayName = "application";
 
 	@NestedConfigurationProperty
 	private final ErrorProperties error = new ErrorProperties();
@@ -129,14 +122,6 @@ public class ServerProperties {
 
 	public void setAddress(InetAddress address) {
 		this.address = address;
-	}
-
-	public String getDisplayName() {
-		return this.displayName;
-	}
-
-	public void setDisplayName(String displayName) {
-		this.displayName = displayName;
 	}
 
 	public Boolean isUseForwardHeaders() {
@@ -223,9 +208,9 @@ public class ServerProperties {
 		private String contextPath;
 
 		/**
-		 * Path of the main dispatcher servlet.
+		 * Display name of the application.
 		 */
-		private String path = "/";
+		private String applicationDisplayName = "application";
 
 		@NestedConfigurationProperty
 		private final Jsp jsp = new Jsp();
@@ -248,13 +233,12 @@ public class ServerProperties {
 			return contextPath;
 		}
 
-		public String getPath() {
-			return this.path;
+		public String getApplicationDisplayName() {
+			return this.applicationDisplayName;
 		}
 
-		public void setPath(String path) {
-			Assert.notNull(path, "Path must not be null");
-			this.path = path;
+		public void setApplicationDisplayName(String displayName) {
+			this.applicationDisplayName = displayName;
 		}
 
 		public Map<String, String> getContextParameters() {
@@ -267,57 +251,6 @@ public class ServerProperties {
 
 		public Session getSession() {
 			return this.session;
-		}
-
-		public String getServletMapping() {
-			if (this.path.equals("") || this.path.equals("/")) {
-				return "/";
-			}
-			if (this.path.contains("*")) {
-				return this.path;
-			}
-			if (this.path.endsWith("/")) {
-				return this.path + "*";
-			}
-			return this.path + "/*";
-		}
-
-		public String getPath(String path) {
-			String prefix = getServletPrefix();
-			if (!path.startsWith("/")) {
-				path = "/" + path;
-			}
-			return prefix + path;
-		}
-
-		public String getServletPrefix() {
-			String result = this.path;
-			int index = result.indexOf('*');
-			if (index != -1) {
-				result = result.substring(0, index);
-			}
-			if (result.endsWith("/")) {
-				result = result.substring(0, result.length() - 1);
-			}
-			return result;
-		}
-
-		public String[] getPathsArray(Collection<String> paths) {
-			String[] result = new String[paths.size()];
-			int i = 0;
-			for (String path : paths) {
-				result[i++] = getPath(path);
-			}
-			return result;
-		}
-
-		public String[] getPathsArray(String[] paths) {
-			String[] result = new String[paths.length];
-			int i = 0;
-			for (String path : paths) {
-				result[i++] = getPath(path);
-			}
-			return result;
 		}
 
 	}
@@ -333,7 +266,7 @@ public class ServerProperties {
 		private final Accesslog accesslog = new Accesslog();
 
 		/**
-		 * Regular expression that matches proxies that are to be trusted.
+		 * Regular expression matching trusted IP addresses.
 		 */
 		private String internalProxies = "10\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}|" // 10/8
 				+ "192\\.168\\.\\d{1,3}\\.\\d{1,3}|" // 192.168/16
@@ -360,12 +293,12 @@ public class ServerProperties {
 
 		/**
 		 * Name of the HTTP header from which the remote IP is extracted. For instance,
-		 * 'X-FORWARDED-FOR'.
+		 * `X-FORWARDED-FOR`.
 		 */
 		private String remoteIpHeader;
 
 		/**
-		 * Tomcat base directory. If not specified, a temporary directory will be used.
+		 * Tomcat base directory. If not specified, a temporary directory is used.
 		 */
 		private File basedir;
 
@@ -373,7 +306,7 @@ public class ServerProperties {
 		 * Delay between the invocation of backgroundProcess methods. If a duration suffix
 		 * is not specified, seconds will be used.
 		 */
-		@DefaultDurationUnit(ChronoUnit.SECONDS)
+		@DurationUnit(ChronoUnit.SECONDS)
 		private Duration backgroundProcessorDelay = Duration.ofSeconds(30);
 
 		/**
@@ -728,9 +661,22 @@ public class ServerProperties {
 		public static class Resource {
 
 			/**
+			 * Whether static resource caching is permitted for this web application.
+			 */
+			private boolean allowCaching = true;
+
+			/**
 			 * Time-to-live of the static resource cache.
 			 */
 			private Duration cacheTtl;
+
+			public boolean isAllowCaching() {
+				return this.allowCaching;
+			}
+
+			public void setAllowCaching(boolean allowCaching) {
+				this.allowCaching = allowCaching;
+			}
 
 			public Duration getCacheTtl() {
 				return this.cacheTtl;
@@ -957,6 +903,7 @@ public class ServerProperties {
 			public void setLogLatency(boolean logLatency) {
 				this.logLatency = logLatency;
 			}
+
 		}
 
 	}
@@ -1058,7 +1005,7 @@ public class ServerProperties {
 			/**
 			 * Whether to enable the access log.
 			 */
-			private Boolean enabled;
+			private boolean enabled = false;
 
 			/**
 			 * Format pattern for access logs.
@@ -1085,11 +1032,11 @@ public class ServerProperties {
 			 */
 			private boolean rotate = true;
 
-			public Boolean getEnabled() {
+			public boolean isEnabled() {
 				return this.enabled;
 			}
 
-			public void setEnabled(Boolean enabled) {
+			public void setEnabled(boolean enabled) {
 				this.enabled = enabled;
 			}
 

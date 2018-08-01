@@ -21,6 +21,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.assertj.core.api.AssertDelegateTarget;
 import org.junit.Test;
 
+import org.springframework.boot.autoconfigure.h2.H2ConsoleProperties;
 import org.springframework.boot.autoconfigure.web.ServerProperties;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockServletContext;
@@ -47,12 +48,14 @@ public class PathRequestTests {
 	public void toH2ConsoleShouldMatchH2ConsolePath() {
 		RequestMatcher matcher = PathRequest.toH2Console();
 		assertMatcher(matcher).matches("/h2-console");
+		assertMatcher(matcher).matches("/h2-console/subpath");
 		assertMatcher(matcher).doesNotMatch("/js/file.js");
 	}
 
 	private RequestMatcherAssert assertMatcher(RequestMatcher matcher) {
 		StaticWebApplicationContext context = new StaticWebApplicationContext();
 		context.registerBean(ServerProperties.class);
+		context.registerBean(H2ConsoleProperties.class);
 		return assertThat(new RequestMatcherAssert(context, matcher));
 	}
 

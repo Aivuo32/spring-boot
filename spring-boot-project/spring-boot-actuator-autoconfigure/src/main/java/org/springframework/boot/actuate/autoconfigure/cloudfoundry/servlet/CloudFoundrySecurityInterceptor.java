@@ -16,6 +16,8 @@
 
 package org.springframework.boot.actuate.autoconfigure.cloudfoundry.servlet;
 
+import java.util.Locale;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.logging.Log;
@@ -47,7 +49,7 @@ class CloudFoundrySecurityInterceptor {
 
 	private final String applicationId;
 
-	private static SecurityResponse SUCCESS = SecurityResponse.success();
+	private static final SecurityResponse SUCCESS = SecurityResponse.success();
 
 	CloudFoundrySecurityInterceptor(TokenValidator tokenValidator,
 			CloudFoundrySecurityService cloudFoundrySecurityService,
@@ -104,7 +106,7 @@ class CloudFoundrySecurityInterceptor {
 		String authorization = request.getHeader("Authorization");
 		String bearerPrefix = "bearer ";
 		if (authorization == null
-				|| !authorization.toLowerCase().startsWith(bearerPrefix)) {
+				|| !authorization.toLowerCase(Locale.ENGLISH).startsWith(bearerPrefix)) {
 			throw new CloudFoundryAuthorizationException(Reason.MISSING_AUTHORIZATION,
 					"Authorization header is missing or invalid");
 		}

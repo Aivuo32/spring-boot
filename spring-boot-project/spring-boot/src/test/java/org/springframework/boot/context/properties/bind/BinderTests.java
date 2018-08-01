@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,13 @@
 
 package org.springframework.boot.context.properties.bind;
 
+import java.beans.PropertyEditorSupport;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.validation.Validation;
 
@@ -27,7 +30,6 @@ import org.assertj.core.matcher.AssertionMatcher;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.internal.matchers.ThrowableMessageMatcher;
 import org.junit.rules.ExpectedException;
 import org.mockito.Answers;
 import org.mockito.InOrder;
@@ -39,6 +41,7 @@ import org.springframework.boot.context.properties.source.ConfigurationPropertyS
 import org.springframework.boot.context.properties.source.MockConfigurationPropertySource;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.convert.ConversionFailedException;
+import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.io.Resource;
@@ -49,7 +52,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.validation.beanvalidation.SpringValidatorAdapter;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -149,15 +151,23 @@ public class BinderTests {
 	}
 
 	@Test
-	public void bindToValueWithMissingPlaceholdersShouldThrowException() {
+	public void bindToValueWithMissingPlaceholderShouldResolveToValueWithPlaceholder() {
 		StandardEnvironment environment = new StandardEnvironment();
 		this.sources.add(new MockConfigurationPropertySource("foo", "${bar}"));
 		this.binder = new Binder(this.sources,
 				new PropertySourcesPlaceholdersResolver(environment));
-		this.thrown.expect(BindException.class);
-		this.thrown.expectCause(ThrowableMessageMatcher.hasMessage(containsString(
-				"Could not resolve placeholder 'bar' in value \"${bar}\"")));
-		this.binder.bind("foo", Bindable.of(Integer.class));
+		BindResult<String> result = this.binder.bind("foo", Bindable.of(String.class));
+		assertThat(result.get()).isEqualTo("${bar}");
+	}
+
+	@Test
+	public void bindToValueWithCustomPropertyEditorShouldReturnConvertedValue() {
+		this.binder = new Binder(this.sources, null, null, (registry) -> registry
+				.registerCustomEditor(JavaBean.class, new JavaBeanPropertyEditor()));
+		this.sources.add(new MockConfigurationPropertySource("foo", "123"));
+		BindResult<JavaBean> result = this.binder.bind("foo",
+				Bindable.of(JavaBean.class));
+		assertThat(result.get().getValue()).isEqualTo("123");
 	}
 
 	@Test
@@ -280,6 +290,29 @@ public class BinderTests {
 		this.binder.bind("foo", target);
 	}
 
+	@Test
+	@SuppressWarnings("rawtypes")
+	public void bindToBeanWithUnresolvableGenerics() {
+		MockConfigurationPropertySource source = new MockConfigurationPropertySource();
+		source.put("foo.bar", "hello");
+		this.sources.add(source);
+		Bindable<GenericBean> target = Bindable.of(GenericBean.class);
+		this.binder.bind("foo", target);
+	}
+
+	@Test
+	public void bindWithEmptyPrefixShouldIgnorePropertiesWithEmptyName() {
+		Map<String, Object> source = new HashMap<>();
+		source.put("value", "hello");
+		source.put("", "bar");
+		Iterable<ConfigurationPropertySource> propertySources = ConfigurationPropertySources
+				.from(new MapPropertySource("test", source));
+		propertySources.forEach(this.sources::add);
+		Bindable<JavaBean> target = Bindable.of(JavaBean.class);
+		JavaBean result = this.binder.bind("", target).get();
+		assertThat(result.getValue()).isEqualTo("hello");
+	}
+
 	public static class JavaBean {
 
 		private String value;
@@ -345,6 +378,31 @@ public class BinderTests {
 
 		public void setOne(CycleBean1 one) {
 			this.one = one;
+		}
+
+	}
+
+	public static class GenericBean<T> {
+
+		private T bar;
+
+		public T getBar() {
+			return this.bar;
+		}
+
+		public void setBar(T bar) {
+			this.bar = bar;
+		}
+
+	}
+
+	public static class JavaBeanPropertyEditor extends PropertyEditorSupport {
+
+		@Override
+		public void setAsText(String text) throws IllegalArgumentException {
+			JavaBean value = new JavaBean();
+			value.setValue(text);
+			setValue(value);
 		}
 
 	}

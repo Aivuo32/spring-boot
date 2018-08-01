@@ -26,6 +26,8 @@ import io.micrometer.core.instrument.binder.MeterBinder;
 
 import org.springframework.boot.util.LambdaSafe;
 import org.springframework.cache.Cache;
+import org.springframework.cache.transaction.TransactionAwareCacheDecorator;
+import org.springframework.util.ClassUtils;
 
 /**
  * Register supported {@link Cache} to a {@link MeterRegistry}.
@@ -37,21 +39,17 @@ public class CacheMetricsRegistrar {
 
 	private final MeterRegistry registry;
 
-	private final String metricName;
-
 	private final Collection<CacheMeterBinderProvider<?>> binderProviders;
 
 	/**
 	 * Creates a new registrar.
 	 * @param registry the {@link MeterRegistry} to use
-	 * @param metricName the name of the metric
 	 * @param binderProviders the {@link CacheMeterBinderProvider} instances that should
 	 * be used to detect compatible caches
 	 */
-	public CacheMetricsRegistrar(MeterRegistry registry, String metricName,
+	public CacheMetricsRegistrar(MeterRegistry registry,
 			Collection<CacheMeterBinderProvider<?>> binderProviders) {
 		this.registry = registry;
-		this.metricName = metricName;
 		this.binderProviders = binderProviders;
 	}
 
@@ -63,7 +61,7 @@ public class CacheMetricsRegistrar {
 	 * @return {@code true} if the {@code cache} is supported and was registered
 	 */
 	public boolean bindCacheToRegistry(Cache cache, Tag... tags) {
-		MeterBinder meterBinder = getMeterBinder(cache, Tags.of(tags));
+		MeterBinder meterBinder = getMeterBinder(unwrapIfNecessary(cache), Tags.of(tags));
 		if (meterBinder != null) {
 			meterBinder.bindTo(this.registry);
 			return true;
@@ -78,7 +76,7 @@ public class CacheMetricsRegistrar {
 				.callbacks(CacheMeterBinderProvider.class, this.binderProviders, cache)
 				.withLogger(CacheMetricsRegistrar.class)
 				.invokeAnd((binderProvider) -> binderProvider.getMeterBinder(cache,
-						this.metricName, cacheTags))
+						cacheTags))
 				.filter(Objects::nonNull).findFirst().orElse(null);
 	}
 
@@ -89,6 +87,31 @@ public class CacheMetricsRegistrar {
 	 */
 	protected Iterable<Tag> getAdditionalTags(Cache cache) {
 		return Tags.of("name", cache.getName());
+	}
+
+	private Cache unwrapIfNecessary(Cache cache) {
+		if (ClassUtils.isPresent(
+				"org.springframework.cache.transaction.TransactionAwareCacheDecorator",
+				getClass().getClassLoader())) {
+			return TransactionAwareCacheDecoratorHandler.unwrapIfNecessary(cache);
+		}
+		return cache;
+	}
+
+	private static class TransactionAwareCacheDecoratorHandler {
+
+		private static Cache unwrapIfNecessary(Cache cache) {
+			try {
+				if (cache instanceof TransactionAwareCacheDecorator) {
+					return ((TransactionAwareCacheDecorator) cache).getTargetCache();
+				}
+			}
+			catch (NoClassDefFoundError ex) {
+				// Ignore
+			}
+			return cache;
+		}
+
 	}
 
 }

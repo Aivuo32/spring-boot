@@ -33,6 +33,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * Abstract base {@link ServletContextInitializer} to register {@link Filter}s in a
@@ -40,8 +41,9 @@ import org.springframework.util.Assert;
  *
  * @param <T> the type of {@link Filter} to register
  * @author Phillip Webb
+ * @since 2.0.1
  */
-abstract class AbstractFilterRegistrationBean<T extends Filter>
+public abstract class AbstractFilterRegistrationBean<T extends Filter>
 		extends DynamicRegistrationBean<Dynamic> {
 
 	/**
@@ -152,8 +154,8 @@ abstract class AbstractFilterRegistrationBean<T extends Filter>
 	}
 
 	/**
-	 * Return a mutable collection of URL patterns that the filter will be registered
-	 * against.
+	 * Return a mutable collection of URL patterns, as defined in the Servlet
+	 * specification, that the filter will be registered against.
 	 * @return the URL patterns
 	 */
 	public Collection<String> getUrlPatterns() {
@@ -161,7 +163,8 @@ abstract class AbstractFilterRegistrationBean<T extends Filter>
 	}
 
 	/**
-	 * Add URL patterns that the filter will be registered against.
+	 * Add URL patterns, as defined in the Servlet specification, that the filter will be
+	 * registered against.
 	 * @param urlPatterns the URL patterns
 	 */
 	public void addUrlPatterns(String... urlPatterns) {
@@ -249,13 +252,13 @@ abstract class AbstractFilterRegistrationBean<T extends Filter>
 				this.logger.info("Mapping filter: '" + registration.getName()
 						+ "' to servlets: " + servletNames);
 				registration.addMappingForServletNames(dispatcherTypes, this.matchAfter,
-						servletNames.toArray(new String[servletNames.size()]));
+						StringUtils.toStringArray(servletNames));
 			}
 			if (!this.urlPatterns.isEmpty()) {
 				this.logger.info("Mapping filter: '" + registration.getName()
 						+ "' to urls: " + this.urlPatterns);
 				registration.addMappingForUrlPatterns(dispatcherTypes, this.matchAfter,
-						this.urlPatterns.toArray(new String[this.urlPatterns.size()]));
+						StringUtils.toStringArray(this.urlPatterns));
 			}
 		}
 	}

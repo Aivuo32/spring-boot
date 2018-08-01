@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ import org.springframework.web.reactive.config.ViewResolverRegistry;
 import org.springframework.web.reactive.config.WebFluxConfigurationSupport;
 import org.springframework.web.reactive.config.WebFluxConfigurer;
 import org.springframework.web.reactive.resource.AppCacheManifestTransformer;
-import org.springframework.web.reactive.resource.GzipResourceResolver;
+import org.springframework.web.reactive.resource.EncodedResourceResolver;
 import org.springframework.web.reactive.resource.ResourceResolver;
 import org.springframework.web.reactive.resource.VersionResourceResolver;
 import org.springframework.web.reactive.result.method.HandlerMethodArgumentResolver;
@@ -86,7 +86,7 @@ import org.springframework.web.reactive.result.view.ViewResolver;
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)
 @ConditionalOnClass(WebFluxConfigurer.class)
 @ConditionalOnMissingBean({ WebFluxConfigurationSupport.class })
-@AutoConfigureAfter({ ReactiveWebServerAutoConfiguration.class,
+@AutoConfigureAfter({ ReactiveWebServerFactoryAutoConfiguration.class,
 		CodecsAutoConfiguration.class, ValidationAutoConfiguration.class })
 @AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE + 10)
 public class WebFluxAutoConfiguration {
@@ -205,6 +205,7 @@ public class WebFluxAutoConfiguration {
 			}
 
 		}
+
 	}
 
 	/**
@@ -274,11 +275,11 @@ public class WebFluxAutoConfiguration {
 		private void configureResourceChain(ResourceProperties.Chain properties,
 				ResourceChainRegistration chain) {
 			ResourceProperties.Strategy strategy = properties.getStrategy();
+			if (properties.isCompressed()) {
+				chain.addResolver(new EncodedResourceResolver());
+			}
 			if (strategy.getFixed().isEnabled() || strategy.getContent().isEnabled()) {
 				chain.addResolver(getVersionResourceResolver(strategy));
-			}
-			if (properties.isGzipped()) {
-				chain.addResolver(new GzipResourceResolver());
 			}
 			if (properties.isHtmlApplicationCache()) {
 				chain.addTransformer(new AppCacheManifestTransformer());

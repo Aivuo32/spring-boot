@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
@@ -54,6 +55,11 @@
 				<version>1.2.17</version>
 			</dependency>
 			<dependency>
+				<groupId>commons-fileupload</groupId>
+				<artifactId>commons-fileupload</artifactId>
+				<version>1.3.3</version>
+			</dependency>
+			<dependency>
 				<groupId>com.nhaarman</groupId>
 				<artifactId>mockito-kotlin</artifactId>
 				<version>1.5.0</version>
@@ -90,7 +96,7 @@
 			<dependency>
 				<groupId>org.testcontainers</groupId>
 				<artifactId>testcontainers</artifactId>
-				<version>1.5.1</version>
+				<version>1.7.2</version>
 			</dependency>
 			<dependency>
 				<groupId>com.vaadin.external.google</groupId>
@@ -100,7 +106,7 @@
 			<dependency>
 				<groupId>io.spring.gradle</groupId>
 				<artifactId>dependency-management-plugin</artifactId>
-				<version>1.0.4.RELEASE</version>
+				<version>1.0.6.RELEASE</version>
 			</dependency>
 			<dependency>
 				<groupId>jline</groupId>
@@ -190,7 +196,7 @@
 			<dependency>
 				<groupId>org.codehaus.plexus</groupId>
 				<artifactId>plexus-utils</artifactId>
-				<version>3.0.20</version>
+				<version>3.0.24</version>
 			</dependency>
 			<dependency>
 				<groupId>org.eclipse.aether</groupId>
@@ -294,24 +300,13 @@
 						<jvmTarget>${java.version}</jvmTarget>
 						<apiVersion>1.1</apiVersion>
 						<languageVersion>1.1</languageVersion>
+						<javaParameters>true</javaParameters>
 					</configuration>
 				</plugin>
 				<plugin>
 					<groupId>org.asciidoctor</groupId>
 					<artifactId>asciidoctor-maven-plugin</artifactId>
 					<version>1.5.5</version>
-				</plugin>
-				<plugin>
-					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-checkstyle-plugin</artifactId>
-					<version>3.0.0</version>
-					<dependencies>
-						<dependency>
-							<groupId>com.puppycrawl.tools</groupId>
-							<artifactId>checkstyle</artifactId>
-							<version>8.5</version>
-						</dependency>
-					</dependencies>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
@@ -337,12 +332,12 @@
 				<plugin>
 					<groupId>org.basepom.maven</groupId>
 					<artifactId>duplicate-finder-maven-plugin</artifactId>
-					<version>1.2.1</version>
+					<version>1.3.0</version>
 				</plugin>
 				<plugin>
 					<groupId>org.codehaus.cargo</groupId>
 					<artifactId>cargo-maven2-plugin</artifactId>
-					<version>1.6.4</version>
+					<version>1.6.7</version>
 				</plugin>
 				<plugin>
 					<groupId>org.codehaus.gmavenplus</groupId>
@@ -525,6 +520,25 @@
 		<plugins>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>regex-property</id>
+						<goals>
+							<goal>regex-property</goal>
+						</goals>
+						<configuration>
+							<name>modulename</name>
+							<value>${project.artifactId}</value>
+							<regex>-</regex>
+							<replacement>.</replacement>
+							<failIfNoMatch>true</failIfNoMatch>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>flatten-maven-plugin</artifactId>
 				<inherited>true</inherited>
 				<executions>
@@ -549,52 +563,11 @@
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-checkstyle-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>checkstyle-validation</id>
-						<phase>validate</phase>
-						<configuration>
-							<skip>${disable.checks}</skip>
-							<configLocation>src/checkstyle/checkstyle.xml</configLocation>
-							<suppressionsLocation>src/checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
-							<headerLocation>src/checkstyle/checkstyle-header.txt</headerLocation>
-							<propertyExpansion>main.basedir=${main.basedir}</propertyExpansion>
-							<encoding>UTF-8</encoding>
-							<consoleOutput>true</consoleOutput>
-							<failOnViolation>true</failOnViolation>
-							<includeTestSourceDirectory>true</includeTestSourceDirectory>
-						</configuration>
-						<goals>
-							<goal>check</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
 					<source>${java.version}</source>
 					<target>${java.version}</target>
 					<parameters>true</parameters>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-eclipse-plugin</artifactId>
-				<configuration>
-					<useProjectReferences>false</useProjectReferences>
-					<additionalConfig>
-						<file>
-							<name>.settings/org.eclipse.jdt.ui.prefs</name>
-							<location>${main.basedir}/eclipse/org.eclipse.jdt.ui.prefs</location>
-						</file>
-						<file>
-							<name>.settings/org.eclipse.jdt.core.prefs</name>
-							<location>${main.basedir}/eclipse/org.eclipse.jdt.core.prefs</location>
-						</file>
-					</additionalConfig>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -611,6 +584,9 @@
 								<requireJavaVersion>
 									<version>[1.8,)</version>
 								</requireJavaVersion>
+								<requireMavenVersion>
+									<version>[3.5.0,)</version>
+								</requireMavenVersion>
 								<requireProperty>
 									<property>main.basedir</property>
 								</requireProperty>
@@ -634,10 +610,17 @@
 				<artifactId>maven-jar-plugin</artifactId>
 				<configuration>
 					<archive>
+						<addMavenDescriptor>false</addMavenDescriptor>
 						<manifest>
-							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-							<addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+							<addDefaultImplementationEntries>false</addDefaultImplementationEntries>
+							<addDefaultSpecificationEntries>false</addDefaultSpecificationEntries>
 						</manifest>
+						<manifestEntries>
+							<Implementation-Title>${project.name}</Implementation-Title>
+							<Automatic-Module-Name>${modulename}</Automatic-Module-Name>
+							<Implementation-Version>${project.version}</Implementation-Version>
+							<Built-By>Spring</Built-By>
+						</manifestEntries>
 					</archive>
 				</configuration>
 			</plugin>
@@ -712,6 +695,13 @@
 								<inherited>true</inherited>
 							</execution>
 						</executions>
+						<dependencies>
+							<dependency>
+								<groupId>org.apache.commons</groupId>
+								<artifactId>commons-lang3</artifactId>
+								<version>3.7</version>
+							</dependency>
+						</dependencies>
 					</plugin>
 				</plugins>
 			</build>
@@ -733,11 +723,8 @@
 		<profile>
 			<id>java9</id>
 			<activation>
-				<jdk>9</jdk>
+				<jdk>[9,)</jdk>
 			</activation>
-			<properties>
-				<aspectj.version>1.9.0.RC1</aspectj.version>
-			</properties>
 			<build>
 				<plugins>
 					<plugin>
@@ -749,6 +736,17 @@
 					</plugin>
 				</plugins>
 			</build>
+		</profile>
+		<profile>
+			<id>java10</id>
+			<activation>
+				<jdk>10</jdk>
+			</activation>
+			<properties>
+				<maven-failsafe-plugin.version>2.21.0</maven-failsafe-plugin.version>
+				<maven-site-plugin.version>3.7</maven-site-plugin.version>
+				<maven-surefire-plugin.version>2.21.0</maven-surefire-plugin.version>
+			</properties>
 		</profile>
 	</profiles>
 </project>

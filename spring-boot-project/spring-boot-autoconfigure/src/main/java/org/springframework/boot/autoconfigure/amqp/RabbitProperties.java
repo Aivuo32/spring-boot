@@ -24,7 +24,7 @@ import java.util.List;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.bind.convert.DefaultDurationUnit;
+import org.springframework.boot.convert.DurationUnit;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -37,6 +37,7 @@ import org.springframework.util.StringUtils;
  * @author Andy Wilkinson
  * @author Josh Thornhill
  * @author Gary Russell
+ * @author Artsiom Yudovin
  */
 @ConfigurationProperties(prefix = "spring.rabbitmq")
 public class RabbitProperties {
@@ -80,7 +81,7 @@ public class RabbitProperties {
 	 * Requested heartbeat timeout; zero for none. If a duration suffix is not specified,
 	 * seconds will be used.
 	 */
-	@DefaultDurationUnit(ChronoUnit.SECONDS)
+	@DurationUnit(ChronoUnit.SECONDS)
 	private Duration requestedHeartbeat;
 
 	/**
@@ -206,7 +207,7 @@ public class RabbitProperties {
 			return this.username;
 		}
 		Address address = this.parsedAddresses.get(0);
-		return address.username == null ? this.username : address.username;
+		return (address.username != null) ? address.username : this.username;
 	}
 
 	public void setUsername(String username) {
@@ -229,7 +230,7 @@ public class RabbitProperties {
 			return getPassword();
 		}
 		Address address = this.parsedAddresses.get(0);
-		return address.password == null ? getPassword() : address.password;
+		return (address.password != null) ? address.password : getPassword();
 	}
 
 	public void setPassword(String password) {
@@ -256,11 +257,11 @@ public class RabbitProperties {
 			return getVirtualHost();
 		}
 		Address address = this.parsedAddresses.get(0);
-		return address.virtualHost == null ? getVirtualHost() : address.virtualHost;
+		return (address.virtualHost != null) ? address.virtualHost : getVirtualHost();
 	}
 
 	public void setVirtualHost(String virtualHost) {
-		this.virtualHost = ("".equals(virtualHost) ? "/" : virtualHost);
+		this.virtualHost = "".equals(virtualHost) ? "/" : virtualHost;
 	}
 
 	public Duration getRequestedHeartbeat() {
@@ -438,10 +439,10 @@ public class RabbitProperties {
 			private Integer size;
 
 			/**
-			 * Number of milliseconds to wait to obtain a channel if the cache size has
-			 * been reached. If 0, always create a new channel.
+			 * Duration to wait to obtain a channel if the cache size has been reached. If
+			 * 0, always create a new channel.
 			 */
-			private Long checkoutTimeout;
+			private Duration checkoutTimeout;
 
 			public Integer getSize() {
 				return this.size;
@@ -451,11 +452,11 @@ public class RabbitProperties {
 				this.size = size;
 			}
 
-			public Long getCheckoutTimeout() {
+			public Duration getCheckoutTimeout() {
 				return this.checkoutTimeout;
 			}
 
-			public void setCheckoutTimeout(Long checkoutTimeout) {
+			public void setCheckoutTimeout(Duration checkoutTimeout) {
 				this.checkoutTimeout = checkoutTimeout;
 			}
 
@@ -556,7 +557,7 @@ public class RabbitProperties {
 		private Integer prefetch;
 
 		/**
-		 * Whether rejected deliveries are re-queued by default. Defaults to true.
+		 * Whether rejected deliveries are re-queued by default.
 		 */
 		private Boolean defaultRequeueRejected;
 
@@ -694,14 +695,14 @@ public class RabbitProperties {
 		private Boolean mandatory;
 
 		/**
-		 * Timeout for receive() operations.
+		 * Timeout for `receive()` operations.
 		 */
-		private Long receiveTimeout;
+		private Duration receiveTimeout;
 
 		/**
-		 * Timeout for sendAndReceive() operations.
+		 * Timeout for `sendAndReceive()` operations.
 		 */
-		private Long replyTimeout;
+		private Duration replyTimeout;
 
 		/**
 		 * Name of the default exchange to use for send operations.
@@ -712,6 +713,12 @@ public class RabbitProperties {
 		 * Value of a default routing key to use for send operations.
 		 */
 		private String routingKey = "";
+
+		/**
+		 * Name of the default queue to receive messages from when none is specified
+		 * explicitly.
+		 */
+		private String queue;
 
 		public Retry getRetry() {
 			return this.retry;
@@ -725,19 +732,19 @@ public class RabbitProperties {
 			this.mandatory = mandatory;
 		}
 
-		public Long getReceiveTimeout() {
+		public Duration getReceiveTimeout() {
 			return this.receiveTimeout;
 		}
 
-		public void setReceiveTimeout(Long receiveTimeout) {
+		public void setReceiveTimeout(Duration receiveTimeout) {
 			this.receiveTimeout = receiveTimeout;
 		}
 
-		public Long getReplyTimeout() {
+		public Duration getReplyTimeout() {
 			return this.replyTimeout;
 		}
 
-		public void setReplyTimeout(Long replyTimeout) {
+		public void setReplyTimeout(Duration replyTimeout) {
 			this.replyTimeout = replyTimeout;
 		}
 
@@ -757,24 +764,32 @@ public class RabbitProperties {
 			this.routingKey = routingKey;
 		}
 
+		public String getQueue() {
+			return this.queue;
+		}
+
+		public void setQueue(String queue) {
+			this.queue = queue;
+		}
+
 	}
 
 	public static class Retry {
 
 		/**
-		 * Whether to enable retries in the RabbitTemplate.
+		 * Whether publishing retries are enabled.
 		 */
 		private boolean enabled;
 
 		/**
-		 * Maximum number of attempts to publish or deliver a message.
+		 * Maximum number of attempts to deliver a message.
 		 */
 		private int maxAttempts = 3;
 
 		/**
-		 * Interval between the first and second attempt to publish or deliver a message.
+		 * Duration between the first and second attempt to deliver a message.
 		 */
-		private long initialInterval = 1000L;
+		private Duration initialInterval = Duration.ofMillis(1000);
 
 		/**
 		 * Multiplier to apply to the previous retry interval.
@@ -782,9 +797,9 @@ public class RabbitProperties {
 		private double multiplier = 1.0;
 
 		/**
-		 * Maximum interval between attempts.
+		 * Maximum duration between attempts.
 		 */
-		private long maxInterval = 10000L;
+		private Duration maxInterval = Duration.ofMillis(10000);
 
 		public boolean isEnabled() {
 			return this.enabled;
@@ -802,11 +817,11 @@ public class RabbitProperties {
 			this.maxAttempts = maxAttempts;
 		}
 
-		public long getInitialInterval() {
+		public Duration getInitialInterval() {
 			return this.initialInterval;
 		}
 
-		public void setInitialInterval(long initialInterval) {
+		public void setInitialInterval(Duration initialInterval) {
 			this.initialInterval = initialInterval;
 		}
 
@@ -818,11 +833,11 @@ public class RabbitProperties {
 			this.multiplier = multiplier;
 		}
 
-		public long getMaxInterval() {
+		public Duration getMaxInterval() {
 			return this.maxInterval;
 		}
 
-		public void setMaxInterval(long maxInterval) {
+		public void setMaxInterval(Duration maxInterval) {
 			this.maxInterval = maxInterval;
 		}
 

@@ -16,7 +16,6 @@
 
 package org.springframework.boot.actuate.metrics.cache;
 
-import com.hazelcast.core.IMap;
 import com.hazelcast.spring.cache.HazelcastCache;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.binder.MeterBinder;
@@ -32,11 +31,8 @@ public class HazelcastCacheMeterBinderProvider
 		implements CacheMeterBinderProvider<HazelcastCache> {
 
 	@Override
-	@SuppressWarnings("unchecked")
-	public MeterBinder getMeterBinder(HazelcastCache cache, String name,
-			Iterable<Tag> tags) {
-		return new HazelcastCacheMetrics((IMap<Object, Object>) cache.getNativeCache(),
-				name, tags);
+	public MeterBinder getMeterBinder(HazelcastCache cache, Iterable<Tag> tags) {
+		return new HazelcastCacheMetrics(cache.getNativeCache(), tags);
 	}
 
 }

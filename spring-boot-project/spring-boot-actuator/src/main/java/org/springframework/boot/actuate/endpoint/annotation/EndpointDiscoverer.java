@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -55,8 +54,8 @@ import org.springframework.util.StringUtils;
  * {@link Endpoint @Endpoint} beans and {@link EndpointExtension @EndpointExtension} beans
  * in an application context.
  *
- * @param <E> The endpoint type
- * @param <O> The operation type
+ * @param <E> the endpoint type
+ * @param <O> the operation type
  * @author Andy Wilkinson
  * @author Stephane Nicoll
  * @author Phillip Webb
@@ -146,17 +145,17 @@ public abstract class EndpointDiscoverer<E extends ExposableEndpoint<O>, O exten
 	}
 
 	private void addExtensionBeans(Collection<EndpointBean> endpointBeans) {
-		Map<?, EndpointBean> byType = endpointBeans.stream()
-				.collect(Collectors.toMap((bean) -> bean.getType(), (bean) -> bean));
+		Map<String, EndpointBean> byId = endpointBeans.stream()
+				.collect(Collectors.toMap(EndpointBean::getId, (bean) -> bean));
 		String[] beanNames = BeanFactoryUtils.beanNamesForAnnotationIncludingAncestors(
 				this.applicationContext, EndpointExtension.class);
 		for (String beanName : beanNames) {
 			ExtensionBean extensionBean = createExtensionBean(beanName);
-			EndpointBean endpointBean = byType.get(extensionBean.getEndpointType());
+			EndpointBean endpointBean = byId.get(extensionBean.getEndpointId());
 			Assert.state(endpointBean != null,
 					() -> ("Invalid extension '" + extensionBean.getBeanName()
-							+ "': no endpoint found with type '"
-							+ extensionBean.getEndpointType().getName() + "'"));
+							+ "': no endpoint found with id '"
+							+ extensionBean.getEndpointId() + "'"));
 			addExtensionBean(endpointBean, extensionBean);
 		}
 	}
@@ -317,10 +316,6 @@ public abstract class EndpointDiscoverer<E extends ExposableEndpoint<O>, O exten
 				.get();
 	}
 
-	public <A, B> void doIt(Function<A, B> x) {
-
-	}
-
 	private E getFilterEndpoint(EndpointBean endpointBean) {
 		E endpoint = this.filterEndpoints.get(endpointBean);
 		if (endpoint == null) {
@@ -359,7 +354,7 @@ public abstract class EndpointDiscoverer<E extends ExposableEndpoint<O>, O exten
 			DiscoveredOperationMethod operationMethod, OperationInvoker invoker);
 
 	/**
-	 * Create a {@link OperationKey} for the given operation.
+	 * Create an {@link OperationKey} for the given operation.
 	 * @param operation the source operation
 	 * @return the operation key
 	 */
@@ -388,11 +383,6 @@ public abstract class EndpointDiscoverer<E extends ExposableEndpoint<O>, O exten
 		}
 
 		@Override
-		public int hashCode() {
-			return this.key.hashCode();
-		}
-
-		@Override
 		public boolean equals(Object obj) {
 			if (obj == this) {
 				return true;
@@ -401,6 +391,11 @@ public abstract class EndpointDiscoverer<E extends ExposableEndpoint<O>, O exten
 				return false;
 			}
 			return this.key.equals(((OperationKey) obj).key);
+		}
+
+		@Override
+		public int hashCode() {
+			return this.key.hashCode();
 		}
 
 		@Override
@@ -437,7 +432,7 @@ public abstract class EndpointDiscoverer<E extends ExposableEndpoint<O>, O exten
 			this.enabledByDefault = (Boolean) attributes.get("enableByDefault");
 			this.filter = getFilter(this.bean.getClass());
 			Assert.state(StringUtils.hasText(this.id),
-					"No @Endpoint id attribute specified for "
+					() -> "No @Endpoint id attribute specified for "
 							+ bean.getClass().getName());
 		}
 
@@ -470,10 +465,6 @@ public abstract class EndpointDiscoverer<E extends ExposableEndpoint<O>, O exten
 			return this.id;
 		}
 
-		public Class<?> getType() {
-			return this.bean.getClass();
-		}
-
 		public boolean isEnabledByDefault() {
 			return this.enabledByDefault;
 		}
@@ -493,20 +484,24 @@ public abstract class EndpointDiscoverer<E extends ExposableEndpoint<O>, O exten
 
 		private final Object bean;
 
-		private final Class<?> endpointType;
+		private final String endpointId;
 
 		private final Class<?> filter;
 
 		ExtensionBean(String beanName, Object bean) {
+			this.bean = bean;
+			this.beanName = beanName;
 			AnnotationAttributes attributes = AnnotatedElementUtils
 					.getMergedAnnotationAttributes(bean.getClass(),
 							EndpointExtension.class);
-			this.beanName = beanName;
-			this.bean = bean;
-			this.endpointType = attributes.getClass("endpoint");
+			Class<?> endpointType = attributes.getClass("endpoint");
+			AnnotationAttributes endpointAttributes = AnnotatedElementUtils
+					.findMergedAnnotationAttributes(endpointType, Endpoint.class, true,
+							true);
+			Assert.state(endpointAttributes != null, () -> "Extension "
+					+ endpointType.getName() + " does not specify an endpoint");
+			this.endpointId = endpointAttributes.getString("id");
 			this.filter = attributes.getClass("filter");
-			Assert.state(!this.endpointType.equals(Void.class), () -> "Extension "
-					+ this.endpointType.getName() + " does not specify an endpoint");
 		}
 
 		public String getBeanName() {
@@ -517,8 +512,8 @@ public abstract class EndpointDiscoverer<E extends ExposableEndpoint<O>, O exten
 			return this.bean;
 		}
 
-		public Class<?> getEndpointType() {
-			return this.endpointType;
+		public String getEndpointId() {
+			return this.endpointId;
 		}
 
 		public Class<?> getFilter() {

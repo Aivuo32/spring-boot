@@ -54,7 +54,7 @@ import org.springframework.core.Ordered;
 public abstract class GenericBomAstTransformation
 		implements SpringBootAstTransformation, Ordered {
 
-	private static ClassNode BOM = ClassHelper.make(DependencyManagementBom.class);
+	private static final ClassNode BOM = ClassHelper.make(DependencyManagementBom.class);
 
 	@Override
 	public void visit(ASTNode[] nodes, SourceUnit source) {
@@ -67,8 +67,7 @@ public abstract class GenericBomAstTransformation
 
 	/**
 	 * The bom to be added to dependency management in compact form:
-	 * <code>"&lt;groupId&gt;:&lt;artifactId&gt;:&lt;version&gt;"</code> (like in a
-	 * {@code @Grab}).
+	 * {@code "<groupId>:<artifactId>:<version>"} (like in a {@code @Grab}).
 	 * @return the maven co-ordinates of the BOM to add
 	 */
 	protected abstract String getBomModule();

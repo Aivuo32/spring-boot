@@ -17,13 +17,14 @@
 package org.springframework.boot.web.embedded.netty;
 
 import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import reactor.ipc.netty.http.server.HttpServer;
-import reactor.ipc.netty.http.server.HttpServerOptions.Builder;
+import reactor.netty.http.HttpProtocol;
+import reactor.netty.http.server.HttpServer;
 
 import org.springframework.boot.web.reactive.server.AbstractReactiveWebServerFactory;
 import org.springframework.boot.web.reactive.server.ReactiveWebServerFactory;
@@ -42,6 +43,10 @@ public class NettyReactiveWebServerFactory extends AbstractReactiveWebServerFact
 
 	private List<NettyServerCustomizer> serverCustomizers = new ArrayList<>();
 
+	private Duration lifecycleTimeout;
+
+	private boolean useForwardHeaders;
+
 	public NettyReactiveWebServerFactory() {
 	}
 
@@ -51,10 +56,10 @@ public class NettyReactiveWebServerFactory extends AbstractReactiveWebServerFact
 
 	@Override
 	public WebServer getWebServer(HttpHandler httpHandler) {
-		HttpServer server = createHttpServer();
+		HttpServer httpServer = createHttpServer();
 		ReactorHttpHandlerAdapter handlerAdapter = new ReactorHttpHandlerAdapter(
 				httpHandler);
-		return new NettyWebServer(server, handlerAdapter);
+		return new NettyWebServer(httpServer, handlerAdapter, this.lifecycleTimeout);
 	}
 
 	/**
@@ -86,19 +91,52 @@ public class NettyReactiveWebServerFactory extends AbstractReactiveWebServerFact
 		this.serverCustomizers.addAll(Arrays.asList(serverCustomizers));
 	}
 
+	/**
+	 * Set the maximum amount of time that should be waited when starting or stopping the
+	 * server.
+	 * @param lifecycleTimeout the lifecycle timeout
+	 */
+	public void setLifecycleTimeout(Duration lifecycleTimeout) {
+		this.lifecycleTimeout = lifecycleTimeout;
+	}
+
+	/**
+	 * Set if x-forward-* headers should be processed.
+	 * @param useForwardHeaders if x-forward headers should be used
+	 * @since 2.1.0
+	 */
+	public void setUseForwardHeaders(boolean useForwardHeaders) {
+		this.useForwardHeaders = useForwardHeaders;
+	}
+
 	private HttpServer createHttpServer() {
-		return HttpServer.builder().options((options) -> {
-			options.listenAddress(getListenAddress());
+		HttpServer server = HttpServer.create().tcpConfiguration(
+				(tcpServer) -> tcpServer.addressSupplier(this::getListenAddress));
+		if (getSsl() != null && getSsl().isEnabled()) {
+			SslServerCustomizer sslServerCustomizer = new SslServerCustomizer(getSsl(),
+					getHttp2(), getSslStoreProvider());
+			server = sslServerCustomizer.apply(server);
+		}
+		if (getCompression() != null && getCompression().getEnabled()) {
+			CompressionCustomizer compressionCustomizer = new CompressionCustomizer(
+					getCompression());
+			server = compressionCustomizer.apply(server);
+		}
+		server = server.protocol(listProtocols());
+		server = (this.useForwardHeaders ? server.forwarded() : server.noForwarded());
+		return applyCustomizers(server);
+	}
+
+	private HttpProtocol[] listProtocols() {
+		if (getHttp2() != null && getHttp2().isEnabled()) {
 			if (getSsl() != null && getSsl().isEnabled()) {
-				SslServerCustomizer sslServerCustomizer = new SslServerCustomizer(
-						getSsl(), getSslStoreProvider());
-				sslServerCustomizer.customize(options);
+				return new HttpProtocol[] { HttpProtocol.H2, HttpProtocol.HTTP11 };
 			}
-			if (getCompression() != null && getCompression().getEnabled()) {
-				options.compression(getCompression().getMinResponseSize());
+			else {
+				return new HttpProtocol[] { HttpProtocol.H2C, HttpProtocol.HTTP11 };
 			}
-			applyCustomizers(options);
-		}).build();
+		}
+		return new HttpProtocol[] { HttpProtocol.HTTP11 };
 	}
 
 	private InetSocketAddress getListenAddress() {
@@ -108,8 +146,11 @@ public class NettyReactiveWebServerFactory extends AbstractReactiveWebServerFact
 		return new InetSocketAddress(getPort());
 	}
 
-	private void applyCustomizers(Builder options) {
-		this.serverCustomizers.forEach((customizer) -> customizer.customize(options));
+	private HttpServer applyCustomizers(HttpServer server) {
+		for (NettyServerCustomizer customizer : this.serverCustomizers) {
+			server = customizer.apply(server);
+		}
+		return server;
 	}
 
 }

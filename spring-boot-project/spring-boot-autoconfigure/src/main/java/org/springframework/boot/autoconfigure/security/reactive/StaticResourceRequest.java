@@ -90,9 +90,9 @@ public final class StaticResourceRequest {
 
 	/**
 	 * The server web exchange matcher used to match against resource
-	 * {@link StaticResourceLocation Locations}.
+	 * {@link StaticResourceLocation locations}.
 	 */
-	public final static class StaticResourceServerWebExchange
+	public static final class StaticResourceServerWebExchange
 			implements ServerWebExchangeMatcher {
 
 		private final Set<StaticResourceLocation> locations;
@@ -142,6 +142,7 @@ public final class StaticResourceRequest {
 					getDelegateMatchers());
 			return matcher.matches(exchange);
 		}
+
 	}
 
 }

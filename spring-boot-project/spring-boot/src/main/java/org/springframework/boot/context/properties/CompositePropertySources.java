@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,7 @@ package org.springframework.boot.context.properties;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import java.util.Objects;
 
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.env.PropertySources;
@@ -42,30 +41,19 @@ final class CompositePropertySources implements PropertySources {
 
 	@Override
 	public Iterator<PropertySource<?>> iterator() {
-		return this.propertySources.stream()
-				.flatMap((sources) -> StreamSupport.stream(sources.spliterator(), false))
-				.collect(Collectors.toList()).iterator();
+		return this.propertySources.stream().flatMap(PropertySources::stream).iterator();
 	}
 
 	@Override
 	public boolean contains(String name) {
-		for (PropertySources sources : this.propertySources) {
-			if (sources.contains(name)) {
-				return true;
-			}
-		}
-		return false;
+		return this.propertySources.stream()
+				.anyMatch((sources) -> sources.contains(name));
 	}
 
 	@Override
 	public PropertySource<?> get(String name) {
-		for (PropertySources sources : this.propertySources) {
-			PropertySource<?> source = sources.get(name);
-			if (source != null) {
-				return source;
-			}
-		}
-		return null;
+		return this.propertySources.stream().map((sources) -> sources.get(name))
+				.filter(Objects::nonNull).findFirst().orElse(null);
 	}
 
 }

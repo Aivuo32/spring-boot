@@ -49,7 +49,9 @@ import org.springframework.boot.autoconfigure.template.TemplateAvailabilityProvi
 import org.springframework.boot.autoconfigure.template.TemplateAvailabilityProviders;
 import org.springframework.boot.autoconfigure.web.ResourceProperties;
 import org.springframework.boot.autoconfigure.web.ServerProperties;
+import org.springframework.boot.autoconfigure.web.servlet.DispatcherServletPath;
 import org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration;
+import org.springframework.boot.autoconfigure.web.servlet.WebMvcProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.server.ErrorPage;
 import org.springframework.boot.web.server.ErrorPageRegistrar;
@@ -69,7 +71,7 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
+import org.springframework.expression.spel.support.SimpleEvaluationContext;
 import org.springframework.util.PropertyPlaceholderHelper.PlaceholderResolver;
 import org.springframework.web.servlet.DispatcherServlet;
 import org.springframework.web.servlet.View;
@@ -89,16 +91,21 @@ import org.springframework.web.util.HtmlUtils;
 @ConditionalOnClass({ Servlet.class, DispatcherServlet.class })
 // Load before the main WebMvcAutoConfiguration so that the error View is available
 @AutoConfigureBefore(WebMvcAutoConfiguration.class)
-@EnableConfigurationProperties({ ServerProperties.class, ResourceProperties.class })
+@EnableConfigurationProperties({ ServerProperties.class, ResourceProperties.class,
+		WebMvcProperties.class })
 public class ErrorMvcAutoConfiguration {
 
 	private final ServerProperties serverProperties;
 
+	private final DispatcherServletPath dispatcherServletPath;
+
 	private final List<ErrorViewResolver> errorViewResolvers;
 
 	public ErrorMvcAutoConfiguration(ServerProperties serverProperties,
+			DispatcherServletPath dispatcherServletPath,
 			ObjectProvider<List<ErrorViewResolver>> errorViewResolversProvider) {
 		this.serverProperties = serverProperties;
+		this.dispatcherServletPath = dispatcherServletPath;
 		this.errorViewResolvers = errorViewResolversProvider.getIfAvailable();
 	}
 
@@ -118,7 +125,7 @@ public class ErrorMvcAutoConfiguration {
 
 	@Bean
 	public ErrorPageCustomizer errorPageCustomizer() {
-		return new ErrorPageCustomizer(this.serverProperties);
+		return new ErrorPageCustomizer(this.serverProperties, this.dispatcherServletPath);
 	}
 
 	@Bean
@@ -170,7 +177,7 @@ public class ErrorMvcAutoConfiguration {
 		// If the user adds @EnableWebMvc then the bean name view resolver from
 		// WebMvcAutoConfiguration disappears, so add it back in to avoid disappointment.
 		@Bean
-		@ConditionalOnMissingBean(BeanNameViewResolver.class)
+		@ConditionalOnMissingBean
 		public BeanNameViewResolver beanNameViewResolver() {
 			BeanNameViewResolver resolver = new BeanNameViewResolver();
 			resolver.setOrder(Ordered.LOWEST_PRECEDENCE - 10);
@@ -304,20 +311,20 @@ public class ErrorMvcAutoConfiguration {
 		}
 
 		private EvaluationContext getContext(Map<String, ?> map) {
-			StandardEvaluationContext context = new StandardEvaluationContext();
-			context.addPropertyAccessor(new MapAccessor());
-			context.setRootObject(map);
-			return context;
+			return SimpleEvaluationContext.forPropertyAccessors(new MapAccessor())
+					.withRootObject(map).build();
 		}
 
 		@Override
 		public String resolvePlaceholder(String placeholderName) {
 			Expression expression = this.expressions.get(placeholderName);
-			return escape(expression == null ? null : expression.getValue(this.context));
+			Object expressionValue = (expression != null)
+					? expression.getValue(this.context) : null;
+			return escape(expressionValue);
 		}
 
 		private String escape(Object value) {
-			return HtmlUtils.htmlEscape(value == null ? null : value.toString());
+			return HtmlUtils.htmlEscape((value != null) ? value.toString() : null);
 		}
 
 	}
@@ -329,15 +336,18 @@ public class ErrorMvcAutoConfiguration {
 
 		private final ServerProperties properties;
 
-		protected ErrorPageCustomizer(ServerProperties properties) {
+		private final DispatcherServletPath dispatcherServletPath;
+
+		protected ErrorPageCustomizer(ServerProperties properties,
+				DispatcherServletPath dispatcherServletPath) {
 			this.properties = properties;
+			this.dispatcherServletPath = dispatcherServletPath;
 		}
 
 		@Override
 		public void registerErrorPages(ErrorPageRegistry errorPageRegistry) {
-			ErrorPage errorPage = new ErrorPage(
-					this.properties.getServlet().getServletPrefix()
-							+ this.properties.getError().getPath());
+			ErrorPage errorPage = new ErrorPage(this.dispatcherServletPath
+					.getRelativePath(this.properties.getError().getPath()));
 			errorPageRegistry.addErrorPages(errorPage);
 		}
 

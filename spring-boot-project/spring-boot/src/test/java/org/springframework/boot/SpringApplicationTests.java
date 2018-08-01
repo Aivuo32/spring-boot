@@ -45,6 +45,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.CachedIntrospectionResults;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.beans.factory.support.BeanDefinitionOverrideException;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanNameGenerator;
 import org.springframework.beans.factory.support.DefaultBeanNameGenerator;
@@ -83,6 +84,7 @@ import org.springframework.core.env.CompositePropertySource;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.env.Profiles;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.io.ClassPathResource;
@@ -106,7 +108,6 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -526,7 +527,7 @@ public class SpringApplicationTests {
 		ConfigurableEnvironment environment = new StandardEnvironment();
 		application.setEnvironment(environment);
 		this.context = application.run();
-		assertThat(environment.acceptsProfiles("foo")).isTrue();
+		assertThat(environment.acceptsProfiles(Profiles.of("foo"))).isTrue();
 	}
 
 	@Test
@@ -655,7 +656,7 @@ public class SpringApplicationTests {
 		finally {
 			verify(listener).onApplicationEvent(isA(ApplicationStartedEvent.class));
 			verify(listener).onApplicationEvent(isA(ApplicationFailedEvent.class));
-			verify(listener, times(0))
+			verify(listener, never())
 					.onApplicationEvent(isA(ApplicationReadyEvent.class));
 		}
 	}
@@ -681,7 +682,7 @@ public class SpringApplicationTests {
 		finally {
 			verify(listener).onApplicationEvent(isA(ApplicationStartedEvent.class));
 			verify(listener).onApplicationEvent(isA(ApplicationFailedEvent.class));
-			verify(listener, times(0))
+			verify(listener, never())
 					.onApplicationEvent(isA(ApplicationReadyEvent.class));
 		}
 	}
@@ -703,8 +704,34 @@ public class SpringApplicationTests {
 		}
 		finally {
 			verify(listener).onApplicationEvent(isA(ApplicationReadyEvent.class));
-			verify(listener, times(0))
+			verify(listener, never())
 					.onApplicationEvent(isA(ApplicationFailedEvent.class));
+		}
+	}
+
+	@Test
+	public void failureInReadyEventListenerCloseApplicationContext() {
+		SpringApplication application = new SpringApplication(ExampleConfig.class);
+		application.setWebApplicationType(WebApplicationType.NONE);
+		ExitCodeListener exitCodeListener = new ExitCodeListener();
+		application.addListeners(exitCodeListener);
+		@SuppressWarnings("unchecked")
+		ApplicationListener<SpringApplicationEvent> listener = mock(
+				ApplicationListener.class);
+		application.addListeners(listener);
+		ExitStatusException failure = new ExitStatusException();
+		willThrow(failure).given(listener)
+				.onApplicationEvent(isA(ApplicationReadyEvent.class));
+		try {
+			application.run();
+			fail("Run should have failed with a RuntimeException");
+		}
+		catch (RuntimeException ex) {
+			verify(listener).onApplicationEvent(isA(ApplicationReadyEvent.class));
+			verify(listener, never())
+					.onApplicationEvent(isA(ApplicationFailedEvent.class));
+			assertThat(exitCodeListener.getExitCode()).isEqualTo(11);
+			assertThat(this.output.toString()).contains("Application run failed");
 		}
 	}
 
@@ -1066,7 +1093,7 @@ public class SpringApplicationTests {
 	@Test
 	public void nonWebApplicationConfiguredViaAPropertyHasTheCorrectTypeOfContextAndEnvironment() {
 		ConfigurableApplicationContext context = new SpringApplication(
-				ExampleConfig.class).run("--spring.main.web-application-type=NONE");
+				ExampleConfig.class).run("--spring.main.web-application-type=none");
 		assertThat(context).isNotInstanceOfAny(WebApplicationContext.class,
 				ReactiveWebApplicationContext.class);
 		assertThat(context.getEnvironment())
@@ -1090,6 +1117,21 @@ public class SpringApplicationTests {
 		int occurrences = StringUtils.countOccurrencesOf(this.output.toString(),
 				"Caused by: java.lang.RuntimeException: ExpectedError");
 		assertThat(occurrences).as("Expected single stacktrace").isEqualTo(1);
+	}
+
+	@Test
+	public void beanDefinitionOverridingIsDisabledByDefault() {
+		this.thrown.expect(BeanDefinitionOverrideException.class);
+		new SpringApplication(ExampleConfig.class, OverrideConfig.class).run();
+	}
+
+	@Test
+	public void beanDefinitionOverridingCanBeEnabled() {
+		assertThat(
+				new SpringApplication(ExampleConfig.class, OverrideConfig.class)
+						.run("--spring.main.allow-bean-definition-overriding=true",
+								"--spring.main.web-application-type=none")
+						.getBean("someBean")).isEqualTo("override");
 	}
 
 	private Condition<ConfigurableEnvironment> matchingPropertySource(
@@ -1201,6 +1243,21 @@ public class SpringApplicationTests {
 
 	@Configuration
 	static class ExampleConfig {
+
+		@Bean
+		public String someBean() {
+			return "test";
+		}
+
+	}
+
+	@Configuration
+	static class OverrideConfig {
+
+		@Bean
+		public String someBean() {
+			return "override";
+		}
 
 	}
 
@@ -1357,7 +1414,7 @@ public class SpringApplicationTests {
 
 	}
 
-	static abstract class AbstractTestRunner implements ApplicationContextAware, Ordered {
+	abstract static class AbstractTestRunner implements ApplicationContextAware, Ordered {
 
 		private final String[] expectedBefore;
 
@@ -1428,14 +1485,14 @@ public class SpringApplicationTests {
 
 	private static class ExitCodeListener implements ApplicationListener<ExitCodeEvent> {
 
-		private int exitCode;
+		private Integer exitCode;
 
 		@Override
 		public void onApplicationEvent(ExitCodeEvent event) {
 			this.exitCode = event.getExitCode();
 		}
 
-		public int getExitCode() {
+		public Integer getExitCode() {
 			return this.exitCode;
 		}
 
@@ -1452,7 +1509,7 @@ public class SpringApplicationTests {
 		@Override
 		public Resource getResource(String path) {
 			Resource resource = this.resources.get(path);
-			return (resource == null ? new ClassPathResource("doesnotexist") : resource);
+			return (resource != null) ? resource : new ClassPathResource("doesnotexist");
 		}
 
 		@Override

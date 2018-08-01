@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests for {@link WebMvcTags}.
  *
  * @author Andy Wilkinson
+ * @author Brian Clozel
  */
 public class WebMvcTagsTests {
 
@@ -38,10 +39,29 @@ public class WebMvcTagsTests {
 	private final MockHttpServletResponse response = new MockHttpServletResponse();
 
 	@Test
-	public void uriTrailingSlashesAreSuppressed() {
+	public void uriTagValueIsBestMatchingPatternWhenAvailable() {
 		this.request.setAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE,
-				"//foo/");
-		assertThat(WebMvcTags.uri(this.request, null).getValue()).isEqualTo("/foo");
+				"/spring");
+		this.response.setStatus(301);
+		Tag tag = WebMvcTags.uri(this.request, this.response);
+		assertThat(tag.getValue()).isEqualTo("/spring");
+	}
+
+	@Test
+	public void uriTagValueIsRootWhenRequestHasNoPatternOrPathInfo() {
+		assertThat(WebMvcTags.uri(this.request, null).getValue()).isEqualTo("root");
+	}
+
+	@Test
+	public void uriTagValueIsRootWhenRequestHasNoPatternAndSlashPathInfo() {
+		this.request.setPathInfo("/");
+		assertThat(WebMvcTags.uri(this.request, null).getValue()).isEqualTo("root");
+	}
+
+	@Test
+	public void uriTagValueIsUnknownWhenRequestHasNoPatternAndNonRootPathInfo() {
+		this.request.setPathInfo("/example");
+		assertThat(WebMvcTags.uri(this.request, null).getValue()).isEqualTo("UNKNOWN");
 	}
 
 	@Test
@@ -63,6 +83,12 @@ public class WebMvcTagsTests {
 		this.response.setStatus(601);
 		Tag tag = WebMvcTags.uri(this.request, this.response);
 		assertThat(tag.getValue()).isEqualTo("root");
+	}
+
+	@Test
+	public void uriTagIsUnknownWhenRequestIsNull() {
+		Tag tag = WebMvcTags.uri(null, null);
+		assertThat(tag.getValue()).isEqualTo("UNKNOWN");
 	}
 
 }

@@ -23,17 +23,16 @@ import org.apache.catalina.LifecycleEvent;
 import org.apache.catalina.LifecycleListener;
 import org.apache.catalina.connector.Connector;
 import org.apache.catalina.core.AprLifecycleListener;
+import org.apache.catalina.valves.RemoteIpValve;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.springframework.boot.web.reactive.server.AbstractReactiveWebServerFactoryTests;
 import org.springframework.http.server.reactive.HttpHandler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -69,22 +68,14 @@ public class TomcatReactiveWebServerFactoryTests
 	}
 
 	@Test
-	public void contextIsAddedToHostBeforeCustomizersAreCalled() throws Exception {
+	public void contextIsAddedToHostBeforeCustomizersAreCalled() {
 		TomcatReactiveWebServerFactory factory = getFactory();
 		TomcatContextCustomizer customizer = mock(TomcatContextCustomizer.class);
-		willAnswer(new Answer<Void>() {
-
-			@Override
-			public Void answer(InvocationOnMock invocation) throws Throwable {
-				assertThat(((Context) invocation.getArguments()[0]).getParent())
-						.isNotNull();
-				return null;
-			}
-
-		}).given(customizer).customize(any(Context.class));
 		factory.addContextCustomizers(customizer);
 		this.webServer = factory.getWebServer(mock(HttpHandler.class));
-		verify(customizer).customize(any(Context.class));
+		ArgumentCaptor<Context> contextCaptor = ArgumentCaptor.forClass(Context.class);
+		verify(customizer).customize(contextCaptor.capture());
+		assertThat(contextCaptor.getValue().getParent()).isNotNull();
 	}
 
 	@Test
@@ -141,6 +132,15 @@ public class TomcatReactiveWebServerFactoryTests
 		for (TomcatConnectorCustomizer listener : listeners) {
 			ordered.verify(listener).customize(any(Connector.class));
 		}
+	}
+
+	@Test
+	public void useForwardedHeaders() {
+		TomcatReactiveWebServerFactory factory = getFactory();
+		RemoteIpValve valve = new RemoteIpValve();
+		valve.setProtocolHeader("X-Forwarded-Proto");
+		factory.addEngineValves(valve);
+		assertForwardHeaderIsUsed(factory);
 	}
 
 }

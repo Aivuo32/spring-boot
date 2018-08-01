@@ -24,15 +24,29 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * {@link ConfigurationProperties} for configuring JMX metrics export.
  *
  * @author Jon Schneider
+ * @author Stephane Nicoll
  * @since 2.0.0
  */
 @ConfigurationProperties(prefix = "management.metrics.export.jmx")
 public class JmxProperties {
 
 	/**
+	 * Metrics JMX domain name.
+	 */
+	private String domain = "metrics";
+
+	/**
 	 * Step size (i.e. reporting frequency) to use.
 	 */
-	private Duration step;
+	private Duration step = Duration.ofMinutes(1);
+
+	public String getDomain() {
+		return this.domain;
+	}
+
+	public void setDomain(String domain) {
+		this.domain = domain;
+	}
 
 	public Duration getStep() {
 		return this.step;
